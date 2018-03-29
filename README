@@ -1,0 +1,12 @@
+This is a project held by CNRG@NTU.
+
+We mainly focus on developing cognitive neural network, in-door robotics and machine learning algorithm for various applications. Every application is contained in a package directory.
+These packages are all supposed to work on Turtlebot3 and coordinated with Robotics Operating System (ROS).
+
+
+This project directory sould be put in the catkin_ws/src directory and build with catkin_make.
+
+
+logs:
+2018/03/29, First created by Edward Chen (edward17829991@gmail.com, r05942027@ntu.edu.tw)
+
