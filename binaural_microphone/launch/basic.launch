@@ -1,1 +1,3 @@
-<node name="webcam_stereo" pkg="binaural_microphone" type="webcam_stereo.py" />
+<launch>
+  <node name="webcam_stereo" pkg="binaural_microphone" type="webcam_stereo.py" />
+</launch>
