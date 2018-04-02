@@ -100,6 +100,7 @@ void set_sigioread_format(int format)
 **********************************************************************/
 {
         wavefiles = 0;
+        printf("format = %d\n", format);
         switch (format)
         {
         case 2:
@@ -266,10 +267,8 @@ double one_wave_sample(int *last)
         case 2:
                 fread(&c2, 1, size, readfile);
                 read_ptr += 2;
-                i2 = c2[1] * 256 + c2[0];
-                if (i2 >= 32768)
-                        i2 = i2 - 65536;
-                x = (double)i2 / 32768.0;
+                i = (c2[1] << 8) | c2[0];
+                x = (double)i / 32768.0;
                 *last = 0;
                 return x;
                 break;
@@ -300,7 +299,7 @@ double one_binary_sample(int *last)
         short signed int i;
         double x;
 
-        if (!read_ptr)
+        if (read_ptr == 0)
         {
                 if (size == 2)
                         fread(&c2, 1, size, readfile);
@@ -308,6 +307,7 @@ double one_binary_sample(int *last)
                         fread(&c1, 1, size, readfile); /* size=1 */
                 read_ptr++;
         }
+        
         if (feof(readfile))
         {
                 *last = 1;
@@ -337,10 +337,13 @@ double one_binary_sample(int *last)
                 case 2:
                         fread(&c2vol, 1, size, readfile);
                         if (msb_first)
-                                i = c2[0] * 256 + c2[1];
+                                i = (c2[0] << 8) | c2[1];
                         else
-                                i = c2[1] * 256 + c2[0];
+                                i = (c2[1] << 8) | c2[0];
                         x = (double)i / 32768.0;
+                        
+                        // printf("SAMPLE: %+1.5f %+5d [%3d, %3d]\n", x, i, c2[0], c2[1]);
+
                         if (feof(readfile))
                         {
                                 *last = 1;

@@ -7,10 +7,10 @@
 
 #if compiling on Mac Intel 64-bit, comment out the following line and uncomment the 
 #line with the -arch x86_64 flag
-GCCFLAGS = -fPIC -pthread -fpermissive
+GCCFLAGS=-fPIC -pthread -fpermissive
 OBJDIR=./Release
 GCC=g++
-INCLUDE= -I. -I./library -I./audiprog
+INCLUDE=-I. -I./library -I./audiprog
 
 #compile the objects file and creates a mex file
 all:
@@ -29,3 +29,7 @@ all:
 	$(GCC) -c $(INCLUDE) $(GCCFLAGS) ./library/sigio.c       -o $(OBJDIR)/sigio.o
 	$(GCC) -c $(INCLUDE) $(GCCFLAGS) ./IPEMAuditoryModelConsole.cpp  -o $(OBJDIR)/IPEMAuditoryModelConsole.o
 	$(GCC) $(OBJDIR)/*.o $(GCCFLAGS) -o IPEMAuditoryModelConsole
+
+	$(GCC) ./named_pipe_read.c $(GCCFLAGS)  -o ./named_pipe_read
+	$(GCC) ./named_pipe_write.c $(GCCFLAGS) -o ./named_pipe_write
+

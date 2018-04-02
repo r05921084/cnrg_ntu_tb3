@@ -47,7 +47,7 @@
 
 /*these variables become globals now, since we are using C instead of C++
   and we want to use them across more than one function */	
-enum {sffWav = 0, sffSnd };
+enum {sffWav = 0, sffSnd};
 
 long	mNumOfChannels;
 double	mFirstFreq;

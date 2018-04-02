@@ -19,76 +19,101 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ------------------------------------------------------------------------------*/
 
+#include <fcntl.h>
+#include <unistd.h>
 #include "audiprog.h"
 #include "hcmbank.h"
 
-#define  tau1      8.0       /* smallest time constant (ms) of LPF     */
-#define  tau2     40.0       /* largest time constant (ms) of LPF      */
-#define  ratio     0.860     /* mixing ratio in LPF                    */
-#define  fsat      0.150     /* saturation firing rate (/ms)           */
-#define  yref      0.001     /* value added to the input sample        */
-#define  fe        1.250     /* cutoff frequency of EEF                */	/* KT 19990525 */
+#define tau1 8.0                                              /* smallest time constant (ms) of LPF     */
+#define tau2 40.0                                             /* largest time constant (ms) of LPF      */
+#define ratio 0.860                                           /* mixing ratio in LPF                    */
+#define fsat 0.150                                            /* saturation firing rate (/ms)           */
+#define yref 0.001                                            /* value added to the input sample        */
+#define fe 1.250 /* cutoff frequency of EEF                */ /* KT 19990525 */
 
+typedef struct
+{
+  double a1q, a2q;    /* coefficients of the AGC          */
+  double g1q, c1, c2; /* lowpass filter section           */
+  double zn;          /* state variable of cell 1 of LPF  */
+  double w1n, fn;     /* state variables of cell 1 of LPF */
+  double w2n, qn;     /* state variables of cell 2 of LPF */
+  double qfac;        /* precomputed fsat/(bias+sqrt(qn)) */
+} hcmdata;
 
-typedef struct{
-               double a1q,a2q;   /* coefficients of the AGC          */
-               double g1q,c1,c2; /* lowpass filter section           */
-               double zn;        /* state variable of cell 1 of LPF  */
-               double w1n,fn;    /* state variables of cell 1 of LPF */
-               double w2n,qn;    /* state variables of cell 2 of LPF */
-               double qfac;      /* precomputed fsat/(bias+sqrt(qn)) */
-              } hcmdata;
+typedef struct
+{
+  double b;        /* - envelope extraction LPF --------  */
+  double b1, b2;   /* coefficients                        */
+  double g1, g2;   /* gain factors                        */
+  double y1n;      /* output of first order cell          */
+  double wn1, wn2; /* state vector of 2nd order cell      */
+} eefdata;
 
-typedef struct{
-               double b;       /* - envelope extraction LPF --------  */
-               double b1,b2;   /* coefficients                        */
-               double g1,g2;   /* gain factors                        */
-               double y1n;     /* output of first order cell          */
-               double wn1,wn2; /* state vector of 2nd order cell      */
-              } eefdata;
+static double bias;                 /* bias in gain control branch         */
+static double factor2;              /* fsat/sqr(bias)                      */
+static hcmdata hcmd[max_nchan + 1]; /* coefficients + state vars of hcm's  */
+static eefdata eefd[max_nchan + 1]; /* coefficients + state vars of eef's  */
 
-static double   bias;               /* bias in gain control branch         */
-static double   factor2;            /* fsat/sqr(bias)                      */
-static hcmdata  hcmd[max_nchan+1];  /* coefficients + state vars of hcm's  */
-static eefdata  eefd[max_nchan+1];  /* coefficients + state vars of eef's  */
-
-static FILE*    sEnvelopeFile = NULL;	/* The file in which the envelopes of
+static FILE *sEnvelopeFile = NULL; /* The file in which the envelopes of
 							               the firing probabilities are stored */
-							            /* KT 19990525 */
+                                   /* KT 19990525 */
+
+static int fd;
 
 /* ----- Down from here: KT 19990525 ----- */
 
 /* Open the firing probability envelope file.
    Returns 1 on success, 0 on failure */
-int HCMBank_OpenEnvelopeFile (const char* inFileNameWithPath)
+int HCMBank_OpenEnvelopeFile(const char *inFileNameWithPath)
 {
-	sEnvelopeFile = fopen(inFileNameWithPath,"wb");
-	return sEnvelopeFile;
+  sEnvelopeFile = fopen(inFileNameWithPath, "wb");
+  return sEnvelopeFile;
+}
+
+int HCMBank_OpenEnvelopePipe(const char *inPipeNameWithPath)
+{
+  if ((fd = open(inPipeNameWithPath, O_WRONLY)) < 0)
+    return NULL;
+  sEnvelopeFile = fdopen(fd, "wb");
+  return sEnvelopeFile;
 }
 
 /* Close the firing probability envelope file. */
-void HCMBank_CloseEnvelopeFile ()
+void HCMBank_CloseEnvelopeFile()
 {
-	fclose(sEnvelopeFile);
-	sEnvelopeFile = NULL;
+  fclose(sEnvelopeFile);
+  sEnvelopeFile = NULL;
+}
+
+void HCMBank_CloseEnvelopePipe()
+{
+  fclose(sEnvelopeFile);
+  close(fd);  
+  sEnvelopeFile = NULL;
+  fd = 0;
 }
 
 /* Finalize HCM bank */
-void finish_hcmbank ()
+void finish_hcmbank()
 {
-	HCMBank_CloseEnvelopeFile();
+  // HCMBank_CloseEnvelopeFile();
+  HCMBank_CloseEnvelopePipe();
 }
 
 /* end of KT changes */
 
-double h_eef(int p,double f,double fs)
-{double rz,iz,rz2,iz2,x,y;
+double h_eef(int p, double f, double fs)
+{
+  double rz, iz, rz2, iz2, x, y;
 
- rz =cos(2*pi*f/fs); iz =sin(2*pi*f/fs);
- rz2=cos(4*pi*f/fs); iz2=sin(4*pi*f/fs);
- x=pow(rz+1,2.0)+pow(iz,2.0); y=x/(pow(rz-eefd[p].b,2.0)+pow(iz,2.0));
- return eefd[p].g1*eefd[p].g2*x*sqrt(y/(pow(rz2+eefd[p].b1*rz+eefd[p].b2,2.0)
-        +pow(iz2+eefd[p].b1*iz,2.0)));
+  rz = cos(2 * pi * f / fs);
+  iz = sin(2 * pi * f / fs);
+  rz2 = cos(4 * pi * f / fs);
+  iz2 = sin(4 * pi * f / fs);
+  x = pow(rz + 1, 2.0) + pow(iz, 2.0);
+  y = x / (pow(rz - eefd[p].b, 2.0) + pow(iz, 2.0));
+  return eefd[p].g1 * eefd[p].g2 * x * sqrt(y / (pow(rz2 + eefd[p].b1 * rz + eefd[p].b2, 2.0) + pow(iz2 + eefd[p].b1 * iz, 2.0)));
 }
 
 void write_eef()
@@ -119,35 +144,45 @@ void write_eef()
   }
 }
 
-double h_lpf(int p,double f,double fs)
-{double rz,iz,x,y;
+double h_lpf(int p, double f, double fs)
+{
+  double rz, iz, x, y;
 
- rz=cos(2*pi*f/fs); iz=sin(2*pi*f/fs);
- y=1/(pow(rz-hcmd[p].c1,2.0)+pow(iz,2.0));
- x=pow(hcmd[p].a1q*rz-hcmd[p].a2q,2.0)+pow(hcmd[p].a1q*iz,2.0); 
- y=y*x/(pow(rz-hcmd[p].c2,2.0)+pow(iz,2.0));
- return hcmd[p].g1q*sqrt(y);
+  rz = cos(2 * pi * f / fs);
+  iz = sin(2 * pi * f / fs);
+  y = 1 / (pow(rz - hcmd[p].c1, 2.0) + pow(iz, 2.0));
+  x = pow(hcmd[p].a1q * rz - hcmd[p].a2q, 2.0) + pow(hcmd[p].a1q * iz, 2.0);
+  y = y * x / (pow(rz - hcmd[p].c2, 2.0) + pow(iz, 2.0));
+  return hcmd[p].g1q * sqrt(y);
 }
 
 void write_lpf()
-{int i,p;
- long prev_s;
- double f,fs,y,ydb;
+{
+  int i, p;
+  long prev_s;
+  double f, fs, y, ydb;
 
- if (open_writefile("lpf.dat")) 
- {for (i=1;i<=100;i++)
-  {f=i/200.0; fprintf(writefile,"%7.3f",f); prev_s=0;
-   for (p=1;p<=nchan;p++) if (step[p]!=prev_s) 
-   {fs=fsmp/step[p]; prev_s=step[p];
-    y=h_lpf(p,f,fs); ydb=8.68*log(y+1.0E-04);
-    fprintf(writefile,"%7.2f",ydb);
-   }
-   fprintf(writefile,"\n");
+  if (open_writefile("lpf.dat"))
+  {
+    for (i = 1; i <= 100; i++)
+    {
+      f = i / 200.0;
+      fprintf(writefile, "%7.3f", f);
+      prev_s = 0;
+      for (p = 1; p <= nchan; p++)
+        if (step[p] != prev_s)
+        {
+          fs = fsmp / step[p];
+          prev_s = step[p];
+          y = h_lpf(p, f, fs);
+          ydb = 8.68 * log(y + 1.0E-04);
+          fprintf(writefile, "%7.2f", ydb);
+        }
+      fprintf(writefile, "\n");
+    }
+    close_writefile();
   }
-  close_writefile();
- }
 }
-
 
 void setup_hcmbank()
 /**********************************************************************
@@ -168,39 +203,44 @@ void setup_hcmbank()
               a2q/a1q = (2fsp.tau1.tau2-tau)/(2fsp.tau1.tau2+tau)
               a1q   = (1-c2)*(fsp.tau1.tau2/tau+0.5)
  **********************************************************************/
-{int    p;
- double fsp,kb,tau;
- double tmp1;
+{
+  int p;
+  double fsp, kb, tau;
+  double tmp1;
 
- Tmodel+=0.9/(2*pi*fe); /*first cell = 0.35, second cell = 0.55*/
- for (p=1;p<=nchan;p++)
- {fsp=fsmp/step[p]; 
-  hcmd[p].c1=(2*fsp*tau1-1)/(2*fsp*tau1+1); 
-  hcmd[p].g1q=0.5*(1-hcmd[p].c1);
-  hcmd[p].c2=(2*fsp*tau2-1)/(2*fsp*tau2+1); tau=ratio*tau1+(1-ratio)*tau2;
-  hcmd[p].a1q=(1-hcmd[p].c2)*(0.5+fsp*tau1*tau2/tau);
-  hcmd[p].a2q=(2*fsp*tau1*tau2-tau)*hcmd[p].a1q/(2*fsp*tau1*tau2+tau);
-/** JPM **
+  Tmodel += 0.9 / (2 * pi * fe); /*first cell = 0.35, second cell = 0.55*/
+  for (p = 1; p <= nchan; p++)
+  {
+    fsp = fsmp / step[p];
+    hcmd[p].c1 = (2 * fsp * tau1 - 1) / (2 * fsp * tau1 + 1);
+    hcmd[p].g1q = 0.5 * (1 - hcmd[p].c1);
+    hcmd[p].c2 = (2 * fsp * tau2 - 1) / (2 * fsp * tau2 + 1);
+    tau = ratio * tau1 + (1 - ratio) * tau2;
+    hcmd[p].a1q = (1 - hcmd[p].c2) * (0.5 + fsp * tau1 * tau2 / tau);
+    hcmd[p].a2q = (2 * fsp * tau1 * tau2 - tau) * hcmd[p].a1q / (2 * fsp * tau1 * tau2 + tau);
+    /** JPM **
   printf("p,c1,c2,a1,a2 =%3d%7.4g%7.4g%7.4g%7.4g\n",p,hcmd[p].c1,hcmd[p].c2,
          hcmd[p].a1q,hcmd[p].a2q);
  *********/
-  kb=pi*fe/fsp; kb=cos(kb)/sin(kb);
-  eefd[p].b=(kb-1)/(kb+1); eefd[p].g1=0.5*(1-eefd[p].b);
-          /* 0.50 because g1 will be multiplied with fn+fn1 */
-  tmp1=pow(kb,2.0);
-  eefd[p].b2=(1+tmp1-kb)/(1+tmp1+kb);
-  eefd[p].b1= 2*(1-tmp1)/(1+tmp1+kb);
-  eefd[p].g2=0.25*(1+eefd[p].b1+eefd[p].b2);
-          /* 0.25 because f(0) = 4w(0) = 4g2.f(0)/(1+b1+b2) */
- }
- bias=sqrt(yref*fsat/fspont)-sqrt(yref); factor2=fsat/pow(bias,2.0);
+    kb = pi * fe / fsp;
+    kb = cos(kb) / sin(kb);
+    eefd[p].b = (kb - 1) / (kb + 1);
+    eefd[p].g1 = 0.5 * (1 - eefd[p].b);
+    /* 0.50 because g1 will be multiplied with fn+fn1 */
+    tmp1 = pow(kb, 2.0);
+    eefd[p].b2 = (1 + tmp1 - kb) / (1 + tmp1 + kb);
+    eefd[p].b1 = 2 * (1 - tmp1) / (1 + tmp1 + kb);
+    eefd[p].g2 = 0.25 * (1 + eefd[p].b1 + eefd[p].b2);
+    /* 0.25 because f(0) = 4w(0) = 4g2.f(0)/(1+b1+b2) */
+  }
+  bias = sqrt(yref * fsat / fspont) - sqrt(yref);
+  factor2 = fsat / pow(bias, 2.0);
 }
 
-
 /* Initialize HCM bank */
-void init_hcmbank(const char* inOutputFileName)
+void init_hcmbank(const char *inOutputFileName)
 {
-/**********************************************************************
+  /**********************************************************************
    Initialization of state variables of the AGC devices. The demands
    are that q(0) = yref and f(0) = yh(0) = fspont
    LPF
@@ -216,21 +256,27 @@ void init_hcmbank(const char* inOutputFileName)
     - yh(0) = w(0)+2w(0)+w(0)       ====> yh(0) = 4.w(0) = fspont
                                     ====> w(0)  = fspont/4
  **********************************************************************/
- int p;
+  int p;
 
- for (p=1;p<=nchan;p++)
- {hcmd[p].zn=yref; hcmd[p].qn=yref; hcmd[p].qfac=0; 
-  hcmd[p].w1n=yref; hcmd[p].w2n=yref/(hcmd[p].a1q-hcmd[p].a2q);
-  hcmd[p].fn=fspont; 
-  eefd[p].y1n=fspont; eefd[p].wn1=0.25*fspont; eefd[p].wn2=eefd[p].wn1;
-  yhcm[p]=fspont; yhcm1[p]=yhcm[p];
- }
+  for (p = 1; p <= nchan; p++)
+  {
+    hcmd[p].zn = yref;
+    hcmd[p].qn = yref;
+    hcmd[p].qfac = 0;
+    hcmd[p].w1n = yref;
+    hcmd[p].w2n = yref / (hcmd[p].a1q - hcmd[p].a2q);
+    hcmd[p].fn = fspont;
+    eefd[p].y1n = fspont;
+    eefd[p].wn1 = 0.25 * fspont;
+    eefd[p].wn2 = eefd[p].wn1;
+    yhcm[p] = fspont;
+    yhcm1[p] = yhcm[p];
+  }
 
- /* Initialization for the envelope output file */	/* KT 19990525 */
- if (!HCMBank_OpenEnvelopeFile(inOutputFileName))
- {
-	printf("\nERROR: the output file \"%s\" could not be opened for writing...\n", inOutputFileName);
- }
+  /* Initialization for the envelope output file */ /* KT 19990525 */
+  // if (!HCMBank_OpenEnvelopeFile(inOutputFileName))
+  if (!HCMBank_OpenEnvelopePipe(inOutputFileName))
+    printf("\nERROR: the output file \"%s\" could not be opened for writing...\n", inOutputFileName);
 }
 
 void hcmbank()
@@ -244,41 +290,57 @@ void hcmbank()
          E2: w(n)  = g2.y1(n) - b1.w(n-1) - b2.w(n-2)
              e(n)  = w(n) + 2.w(n-1) + w(n-2)
  **********************************************************************/
-{int    p,compute_en;
- double zn1,fn1,new_w2,new_w;
+{
+  int p, compute_en;
+  double zn1, fn1, new_w2, new_w;
 
- compute_en=((n & Nemask)==0);
- for (p=low_ch[nmod];p<=nchan;p++)
-/*
+  compute_en = ((n & Nemask) == 0);
+  for (p = low_ch[nmod]; p <= nchan; p++)
+  /*
  for (p=1;p<=nchan;p++) if ((n & stepmask[p])==0)
 */
- {zn1=hcmd[p].zn; fn1=hcmd[p].fn; 
-  if (ybpf[p]+yref>0.0) hcmd[p].zn=ybpf[p]+yref; else hcmd[p].zn=0.0;
-  hcmd[p].w1n=hcmd[p].g1q*(hcmd[p].zn+zn1)+hcmd[p].c1*hcmd[p].w1n; 
-  new_w2=hcmd[p].w1n+hcmd[p].c2*hcmd[p].w2n;
-  if (compute_en) 
-  {hcmd[p].qn=hcmd[p].a1q*new_w2-hcmd[p].a2q*hcmd[p].w2n; 
-   hcmd[p].qfac=0;
-  }
-  hcmd[p].w2n=new_w2;
-  if (hcmd[p].zn<=0) hcmd[p].fn=0; 
-  else if (hcmd[p].qn<=0) hcmd[p].fn=factor2*hcmd[p].zn; 
-       else
-       {if (hcmd[p].qfac==0) hcmd[p].qfac=fsat/pow(bias+sqrt(hcmd[p].qn),2.0); 
-        hcmd[p].fn=hcmd[p].qfac*hcmd[p].zn;
-       }
- 
-  eefd[p].y1n=eefd[p].g1*(hcmd[p].fn+fn1)+eefd[p].b*eefd[p].y1n; 
-  new_w=eefd[p].g2*eefd[p].y1n-eefd[p].b1*eefd[p].wn1-eefd[p].b2*eefd[p].wn2;
-  if (compute_en)
   {
-	yhcm1[p]=yhcm[p]; yhcm[p]=new_w+2*eefd[p].wn1+eefd[p].wn2;
-	fprintf(sEnvelopeFile,"%.10lf ",(yhcm[p] < 0) ? 0 : yhcm[p]);	/* KT 19990525 */
+    zn1 = hcmd[p].zn;
+    fn1 = hcmd[p].fn;
+    if (ybpf[p] + yref > 0.0)
+      hcmd[p].zn = ybpf[p] + yref;
+    else
+      hcmd[p].zn = 0.0;
+    hcmd[p].w1n = hcmd[p].g1q * (hcmd[p].zn + zn1) + hcmd[p].c1 * hcmd[p].w1n;
+    new_w2 = hcmd[p].w1n + hcmd[p].c2 * hcmd[p].w2n;
+    if (compute_en)
+    {
+      hcmd[p].qn = hcmd[p].a1q * new_w2 - hcmd[p].a2q * hcmd[p].w2n;
+      hcmd[p].qfac = 0;
+    }
+    hcmd[p].w2n = new_w2;
+    if (hcmd[p].zn <= 0)
+      hcmd[p].fn = 0;
+    else if (hcmd[p].qn <= 0)
+      hcmd[p].fn = factor2 * hcmd[p].zn;
+    else
+    {
+      if (hcmd[p].qfac == 0)
+        hcmd[p].qfac = fsat / pow(bias + sqrt(hcmd[p].qn), 2.0);
+      hcmd[p].fn = hcmd[p].qfac * hcmd[p].zn;
+    }
+
+    eefd[p].y1n = eefd[p].g1 * (hcmd[p].fn + fn1) + eefd[p].b * eefd[p].y1n;
+    new_w = eefd[p].g2 * eefd[p].y1n - eefd[p].b1 * eefd[p].wn1 - eefd[p].b2 * eefd[p].wn2;
+    if (compute_en)
+    {
+      yhcm1[p] = yhcm[p];
+      yhcm[p] = new_w + 2 * eefd[p].wn1 + eefd[p].wn2;
+      fprintf(sEnvelopeFile, "%.10lf ", (yhcm[p] < 0) ? 0 : yhcm[p]); /* KT 19990525 */      
+    }
+    eefd[p].wn2 = eefd[p].wn1;
+    eefd[p].wn1 = new_w;
   }
-  eefd[p].wn2=eefd[p].wn1; eefd[p].wn1=new_w;
- }
- if (compute_en) fprintf(sEnvelopeFile,"\n");	/* KT 19990525 */
+  if (compute_en)
+    {
+      // fprintf(sEnvelopeFile, "\n"); /* KT 19990525 */
+
+      fprintf(sEnvelopeFile, "%d\n", n); /* KT 19990525 */
+      fflush(sEnvelopeFile);
+    }
 }
-
-
-

@@ -85,15 +85,19 @@ long analyse_signal(const char *inOutputFile)
 	int last;
 	parameters frame;
 
-	if (init_analysis(infile, inOutputFile))
+	if (init_analysis(inOutputFile))
 		return -1;
 
 	printf("Analysing %s\n", infile);
+	// open_readfile(infile);
+	open_readpipe(infile);
 	do
 	{
 		one_frame(&last, frame);
 	} while (!last);
-
+	// close_readfile();
+	close_readpipe();
+	
 	printf("nsamp: %d\n", n);
 	finish_analysis(); /* KT 19990525 */
 
@@ -114,7 +118,7 @@ long AudiProg(long inNumOfChannels, double inFirstFreq, double inFreqDist,
 	char theOutputFile[256];
 
 	if (inSoundFileFormat < 2){
-		printf("No longer support format code < 2!!! EDWARDCHEN");
+		printf("Only support format code >= 2!!! EDWARDCHEN");
 		return -1;
 	}
 

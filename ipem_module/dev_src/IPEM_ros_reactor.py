@@ -7,9 +7,15 @@ import subprocess
 import os
 import threading
 
-
 import rospy
 from std_msgs.msg import String
+
+
+RATE = 22050
+TOPIC_NAME = 'audio_stream_raw'
+NODE_NAME = 'IPEM_reactor'
+
+TEMP_FILE_DIR = '/tmp/%s' % NODE_NAME
 
 
 frames = []
@@ -19,7 +25,7 @@ event_main_loop = threading.Event()
 def callback(data):
     global frames
     np_data = np.fromstring(data.data, dtype=np.int16).reshape([-1, 2])
-    rospy.loginfo(np_data.shape)
+    # rospy.loginfo(np_data.shape)
     frames.append(np_data)
     if len(frames) > 10:
         event_main_loop.set()
@@ -84,16 +90,10 @@ def reactor():
         print('main_loop: ', time.time() - t1)
 
 if __name__ == '__main__':
-    RATE = 22050
-
-    TOPIC_NAME = 'audio_stream_raw'
-    NODE_NAME = 'IPEM_reactor'
-
-    TEMP_FILE_DIR = '/tmp/%s' % NODE_NAME
-
-    reactor()
-
-
+    try:
+        reactor()
+    except rospy.ROSInterruptException as e:
+        rospy.loginfo(e)
 
 
     # event_L = threading.Event()

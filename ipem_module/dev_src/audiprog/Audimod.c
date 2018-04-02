@@ -29,6 +29,7 @@
 #include "filterbank.h"
 #include "hcmbank.h"
 
+
 /* KT 19990525
 #include "ecebank.h"
 #include "cpu.h"
@@ -38,7 +39,6 @@
 
 static double delay; /* delay introduced by model    */
 static parameters par[width - 1 + 1];
-static long par_ptr; /* pointer to most recent frame */
 static double tend, tout;
 static double t, Tsmp;
 static long pitch_delay; /* get pitch from frame[n+pitch_delay] */
@@ -101,31 +101,6 @@ long specify_parameters(long inNumOfChannels, double inFirstFreq, double inFreqD
   return 0;
 }
 
-void scale_frame(int *vuv, parameters frame)
-/*********************************************************************
-   Replace the pitch (in Tsmp) by the fundamental (in kHz)
-   Replace the pitch and V/UV evidence over 30 ms to the left in
-   the output stream (=frame)
- *********************************************************************/
-{
-  int i;
-  long m;
-
-  if (par[par_ptr][nchan + 1] != 0)
-    par[par_ptr][nchan + 1] = fsmp / (par[par_ptr][nchan + 1]);
-  m = par_ptr - pitch_delay;
-  if (m < 0)
-    m = m + width;
-  for (i = 1; i <= npar_max; i++)
-    frame[i] = par[m][i];
-  frame[nchan + 1] = par[par_ptr][nchan + 1];
-  frame[nchan + 2] = par[par_ptr][nchan + 2];
-  if (frame[nchan + 1] != 0)
-    *vuv = 1;
-  else
-    *vuv = 0;
-}
-
 long startup_audiprog(long inNumOfChannels, double inFirstFreq, double inFreqDist, double inSampleFrequency)
 {
   long theResult = 0;
@@ -142,7 +117,7 @@ long startup_audiprog(long inNumOfChannels, double inFirstFreq, double inFreqDis
   else return theResult;
 }
 
-int init_analysis(text_line filename, const char *inOutputFileName)
+int init_analysis(const char *inOutputFileName)
 /**********************************************************************
     The signal is supposed to be surrounded by two silent intervals
     of at least 20 ms long.
@@ -159,11 +134,10 @@ int init_analysis(text_line filename, const char *inOutputFileName)
   tout = delay + Tframe;
   tend = 0;
   Tsmp = 1 / fsmp;
-  par_ptr = 0;
   for (m = 0; m < width; m++)
     for (p = 1; p < nchan + Nerl + 4; p++)
       par[m][p] = 0;
-  return open_readfile(filename);
+  return 0;
 }
 
 /* Finalize analysis of one file */
@@ -175,82 +149,70 @@ void finish_analysis()
 
 int one_frame(int *last, parameters frame)
 {
-  long cnt;
-  int vuv;
   double sn;
-
-  if (tend != 0)
-    *last = 1;
+  
+  if (tend)  // final padding EDWARDCHEN
+    sn = 0;
   else
-    *last = 0;
-    
-  if (n == 0)
-    cnt = shift + 1;
-  else
-    cnt = 1;
-  do
   {
+    sn = factor * new_sample(last);
     if (*last)
-      sn = 0;
-    else
     {
-      sn = factor * new_sample(last);
-      if (*last)
-      {
-        tend = n * Tsmp + delay + 2 * Tframe;
-        close_readfile();
-      }
+      tend = n * Tsmp + delay + 2 * Tframe;
+      // tend = n * Tsmp + delay;
     }
-    sn = omef(sn);
+  }
+
+  sn = omef(sn);
+  decimate(sn);
+  filterbank();
+  hcmbank();
+
+  if (fsmp != fssig)
+  {
+    sn = 0;
+    n++;
+    t = t + Tsmp;
+    if (++nmod == max_step)
+      nmod = 0;
     decimate(sn);
     filterbank();
     hcmbank();
+  }
+  
+  n++;
+  t = t + Tsmp;
+  if (++nmod == max_step)
+    nmod = 0;
 
-    /* KT 19990525
-  ecebank(); 
-  cpu();
-*/
-    if (fsmp != fssig)
-    {
-      sn = 0;
-      n++;
-      t = t + Tsmp;
-      nmod++;
-      if (nmod == max_step)
-        nmod = 0;
-      decimate(sn);
-      filterbank();
-      hcmbank();
+  if (((n & Nemask) == 0) && (t >= tout))
+  {
+    tout = tout + Tframe;
+  }
 
-      /* KT 19990525
-   ecebank(); 
-   cpu();
-*/
-    }
-    n++;
-    t = t + Tsmp;
-    nmod++;
-    if (nmod == max_step)
-      nmod = 0;
-    if (((n & Nemask) == 0) && (t >= tout))
-    {
-      if (par_ptr == width - 1)
-        par_ptr = 0;
-      else
-        par_ptr++;
+  if (tend)
+  {
+    if(tout < tend)
+      *last = 0;
+    else
+      *last = 1;
+  }
 
-      /* KT 19990525
-   results(t-tout,par[par_ptr]); 
-*/
-      scale_frame(&vuv, frame);
+  // if ((tend != 0) && (tout >= tend))
+  //   {
+  //     printf("if ((tend != 0) && (tout >= tend))\n");
+  //     // *last = 1;
+  //   }
+  // else
+  //   {
+  //     if ((tend != 0) && (tout < tend))
+  //       printf("if ((tend != 0) && (tout < tend)) %f, %f, %f\n", tend, tout, sn);
+  //     else
+  //       printf("if ((tend == 0)\n");
+  //     if (*last)
+  //       printf("write *last = 0 back.\n");
+  //     *last = 0;
+  //   }
 
-      tout = tout + Tframe;
-      cnt--;
-    }
-  } while (cnt > 0);
-  if ((tend != 0) && (tout >= tend))
-    *last = 1;
-  else
-    *last = 0;
-  return vuv;
+  return 0;
 }

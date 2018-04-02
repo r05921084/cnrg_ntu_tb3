@@ -105,7 +105,7 @@ long IPEMAuditoryModel_Process()
   	return AudiProg(mNumOfChannels, mFirstFreq, mFreqDist,
 			mInputFileName, mInputFilePath,
 			mOutputFileName, mOutputFilePath,
-			mSampleFrequency, (mSoundFileFormat == sffWav) ? 2 : 3 /* ? */);
+			mSampleFrequency, mSoundFileFormat);
 
 
  

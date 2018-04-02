@@ -48,7 +48,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-enum {sffWav = 0, sffSnd };
+enum {sffWav=2, sffSnd=3, sffPcm=5};
 
 // -----------------------------------------------------------------------------
 //	DoInteractiveSession
@@ -121,7 +121,7 @@ void ShowCorrectUsage (const char* inApplicationName)
 	printf(" -of string     name of the output file\n");
 	printf(" -od string     path to the output file\n");
 	printf(" -fs double     signal's sample frequency (Hz)\n");
-	printf(" -ff string     signal's file format (either wav or snd)\n");
+	printf(" -ff string     signal's file format (wav or pcm)\n");
 	printf("If you do not specify a certain option, the default is used.\n");
 	printf("Use '%s -i' to start an interactive session.\n",inApplicationName);
 	printf("(Version of 19991108)");
@@ -186,6 +186,7 @@ bool DoCommandLineParsing (int inNumOfArguments, char* inArguments[],
 			{
 				if (strcmp(inArguments[theIndex],"wav") == 0) outSoundFileFormat = sffWav;
 				else if (strcmp(inArguments[theIndex],"snd") == 0) outSoundFileFormat = sffSnd;
+				else if (strcmp(inArguments[theIndex],"pcm") == 0) outSoundFileFormat = sffPcm;
 				else
 					theResult = false;
 				theIndex++;

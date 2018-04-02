@@ -19,6 +19,8 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ------------------------------------------------------------------------------*/
 
+#include <fcntl.h>
+#include <unistd.h>
 #include <command.h>
 
 cmnd_modes cmnd_mode = normal;
@@ -36,6 +38,8 @@ FILE *out_file;
 FILE *readfile;
 FILE *writefile;
 text_line tmp_filename;
+
+int fd;
 
 /***************************************************************************
 
@@ -620,6 +624,24 @@ int open_readfile(const char *filename)
   return feof(readfile);
 }
 
+int open_readpipe(const char *pipename)
+{
+  if ((fd = open(pipename, O_RDONLY)) < 0)
+    {
+      printf("error open %s\n", pipename);
+      return -1;
+    }
+
+  if ((readfile = fdopen(fd, "rb")) == NULL)
+  {
+    printf("error fdopen %s\n", pipename);
+    return -1;
+  }
+
+  read_ptr = 0;
+  return feof(readfile);
+}
+
 int open_writefile(const char *filename)
 {
   writefile = fopen(filename, "wb");
@@ -634,6 +656,15 @@ void close_readfile()
 {
   fclose(readfile);
   read_ptr = 0;
+}
+
+void close_readpipe()
+{  
+  fclose(readfile);
+  close(fd);
+  read_ptr = 0;
+  readfile = NULL;
+  fd = 0;
 }
 
 void close_writefile()

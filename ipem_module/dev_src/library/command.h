@@ -30,10 +30,10 @@
 
 #define maxstrlen 1024
 
-#if !defined (_WIN32)
+// #if !defined (_WIN32)
 #define max(a,b)    (((a) > (b)) ? (a) : (b))
 #define min(a,b)    (((a) < (b)) ? (a) : (b))
-#endif
+// #endif
 
 enum cmnd_modes_t {normal,read_seq,exec_seq};
 enum srcds_t {none,usual,inpt,ascii,buffer,outpt};
@@ -82,6 +82,9 @@ extern int open_readfile(const char *filename);
 extern int open_writefile(const char *filename); 
 extern void close_readfile(); 
 extern void close_writefile(); 
+
+extern int open_readpipe(const char *pipename);
+extern void close_readpipe(); 
 
 #endif /* !defined( COMMAND_H ) */
 
