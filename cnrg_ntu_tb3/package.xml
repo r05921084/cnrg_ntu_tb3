@@ -9,6 +9,7 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <run_depend>binaural_microphone</run_depend>
+  <run_depend>realsense_rgbd_camera</run_depend>
 
   <export>
     <metapackage/> 
