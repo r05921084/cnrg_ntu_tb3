@@ -122,7 +122,6 @@ void setup_omef()
  }
  while (fabs(alpha-1.0)>=0.05);
  zhp=1-2*pi*fhp/fssig; gain=1+b1+b2;
-//  write_omef();
 }
 
 void init_omef()

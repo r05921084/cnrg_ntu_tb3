@@ -17,10 +17,10 @@ all:
 	$(GCC) -c $(INCLUDE) $(GCCFLAGS) ./audiprog/Audimod.c    -o $(OBJDIR)/Audimod.o
 	$(GCC) -c $(INCLUDE) $(GCCFLAGS) ./audiprog/AudiProg.c   -o $(OBJDIR)/AudiProg.o
 	$(GCC) -c $(INCLUDE) $(GCCFLAGS) ./library/command.c     -o $(OBJDIR)/command.o
-	$(GCC) -c $(INCLUDE) $(GCCFLAGS) ./audiprog/cpu.c        -o $(OBJDIR)/cpu.o
-	$(GCC) -c $(INCLUDE) $(GCCFLAGS) ./audiprog/cpupitch.c   -o $(OBJDIR)/cpupitch.o
+	# $(GCC) -c $(INCLUDE) $(GCCFLAGS) ./audiprog/cpu.c        -o $(OBJDIR)/cpu.o
+	# $(GCC) -c $(INCLUDE) $(GCCFLAGS) ./audiprog/cpupitch.c   -o $(OBJDIR)/cpupitch.o
 	$(GCC) -c $(INCLUDE) $(GCCFLAGS) ./audiprog/decimation.c -o $(OBJDIR)/decimation.o
-	$(GCC) -c $(INCLUDE) $(GCCFLAGS) ./audiprog/ecebank.c    -o $(OBJDIR)/ecebank.o
+	# $(GCC) -c $(INCLUDE) $(GCCFLAGS) ./audiprog/ecebank.c    -o $(OBJDIR)/ecebank.o
 	$(GCC) -c $(INCLUDE) $(GCCFLAGS) ./library/filenames.c   -o $(OBJDIR)/filenames.o
 	$(GCC) -c $(INCLUDE) $(GCCFLAGS) ./audiprog/filterbank.c -o $(OBJDIR)/filterbank.o
 	$(GCC) -c $(INCLUDE) $(GCCFLAGS) ./audiprog/Hcmbank.c    -o $(OBJDIR)/Hcmbank.o

@@ -19,7 +19,7 @@ event_main_loop = threading.Event()
 def callback(data):
     global frames
     np_data = np.fromstring(data.data, dtype=np.int16).reshape([-1, 2])
-    # rospy.loginfo(np_data.shape)
+    rospy.loginfo(np_data.shape)
     frames.append(np_data)
     if len(frames) > 10:
         event_main_loop.set()

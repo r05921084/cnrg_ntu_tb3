@@ -31,50 +31,48 @@
 #include "audimod.h"
 
 static text_line infile;
-// static text_line outfile;
-static int bytes;
-static int w,w1,w2;
+static int w, w1, w2;
 
 static text_line s;
 
-double  Tdecim;     /* delay introduced by decimation unit (ms)  */
-double  Tmodel;     /* delay introduced by rest of model (ms)    */
-double  fsmp=20.0;  /* internal sampling frequency = 1/Tsmp      */
-double  fssig=10.0; /* signal sampling frequency                 */
-double  Tframe=10;  /* time between successive frames (ms)       */
-int     ndecim;     /* number of decimation filters to use       */
-double  Tse;        /* time between successive envelope samples  */
-int     Ne;         /* Tsmp for envelope / Tsmp of model         */
-int     Nemask;     /* Ne-1 = mask for MOD replacement           */
-int     Nerl=5;     /* number of erl samples per frame           */
-double  Terl;       /* time between erl samples in frame         */
-int     shift;      /* pitch comes from SHIFT frames behind      */
-int     nchan=20;   /* number of filterbank channels             */
-double  uc1=2.0;    /* ucp of first channel                      */
-double  duc=0.85;   /* spacing between succesive ucp's           */
-int     n;          /* time index                                */
+double Tdecim;		 /* delay introduced by decimation unit (ms)  */
+double Tmodel;		 /* delay introduced by rest of model (ms)    */
+double fsmp = 20.0;  /* internal sampling frequency = 1/Tsmp      */
+double fssig = 10.0; /* signal sampling frequency                 */
+double Tframe = 10;  /* time between successive frames (ms)       */
+int ndecim;			 /* number of decimation filters to use       */
+double Tse;			 /* time between successive envelope samples  */
+int Ne;				 /* Tsmp for envelope / Tsmp of model         */
+int Nemask;			 /* Ne-1 = mask for MOD replacement           */
+int Nerl = 5;		 /* number of erl samples per frame           */
+double Terl;		 /* time between erl samples in frame         */
+int shift;			 /* pitch comes from SHIFT frames behind      */
+int nchan = 20;		 /* number of filterbank channels             */
+double uc1 = 2.0;	/* ucp of first channel                      */
+double duc = 0.85;   /* spacing between succesive ucp's           */
+int n;				 /* time index                                */
 
-rvector fc;         /* BPF central frequencies                   */
-rvector uc;         /* corresponding critical band units         */
-ivector x2;         /* is there a need to upsample after BPF?    */
-ivector step;       /* time steps used in analysis channels      */
-ivector stepmask;   /* stepmask=step-1 = mask for MOD replacement*/
+rvector fc;		  /* BPF central frequencies                   */
+rvector uc;		  /* corresponding critical band units         */
+ivector x2;		  /* is there a need to upsample after BPF?    */
+ivector step;	 /* time steps used in analysis channels      */
+ivector stepmask; /* stepmask=step-1 = mask for MOD replacement*/
 /* JPM: 20/10/98: new implementation of channel selection ********/
-int     max_step;   /* maximum step encountered in channels      */
-int     nmod;       /* time modulo max_step                      */
-int     low_ch[16]; /* lowest channel to process for different   */
-                    /* values of nmod                            */
+int max_step;   /* maximum step encountered in channels      */
+int nmod;		/* time modulo max_step                      */
+int low_ch[16]; /* lowest channel to process for different   */
+				/* values of nmod                            */
 /*****************************************************************/
-double  decim[5+1]; /* decimation products                       */
-ivector indx;       /* index in decimation product array         */
-rvector ybpf;       /* BPF outputs at multiples of step.Tsmp     */
+double decim[5 + 1]; /* decimation products                       */
+ivector indx;		 /* index in decimation product array         */
+rvector ybpf;		 /* BPF outputs at multiples of step.Tsmp     */
 
-rvector yhcm;       /* HCM outputs at multiples of Tse           */
-rvector yhcm1;      /* previous HCM outputs at multiples of Tse  */
-rvector ev,erl;     /* virtual tone, roughness+loudness comps.   */
-rvector prev_erl;   /* previous roughness+loudness components    */
-rvector yres;       /* xxx outputs at multiples of step.Tsmp     */
-double  factor;     /* multiplication factor for input samples   */
+rvector yhcm;	 /* HCM outputs at multiples of Tse           */
+rvector yhcm1;	/* previous HCM outputs at multiples of Tse  */
+rvector ev, erl;  /* virtual tone, roughness+loudness comps.   */
+rvector prev_erl; /* previous roughness+loudness components    */
+rvector yres;	 /* xxx outputs at multiples of step.Tsmp     */
+double factor = 1.0;	/* multiplication factor for input samples   */
 
 long analyse_signal(const char *inOutputFile)
 /**********************************************************************
@@ -84,46 +82,22 @@ long analyse_signal(const char *inOutputFile)
     time n.Tframe (n=1..nframe).
  **********************************************************************/
 {
-	int vuv;
 	int last;
 	parameters frame;
 
-	if (!init_analysis(infile, inOutputFile))
+	if (init_analysis(infile, inOutputFile))
 		return -1;
 
 	printf("Analysing %s\n", infile);
-	//  if (!open_writefile(outfile))
-	//  {printf("\nerror opening %s\n",outfile); return -1;}
 	do
 	{
-		vuv = one_frame(&last, frame);
-		//   write_frame(vuv,nspect,frame);
+		one_frame(&last, frame);
 	} while (!last);
-	//  close_writefile(); /* readfile is closed in one_frame !!!! */
+
 	printf("nsamp: %d\n", n);
 	finish_analysis(); /* KT 19990525 */
 
 	return 0;
-}
-
-void file_information(long inSoundFileFormat)
-{
- int w;
- w=1;
- strcpy(output_extension,".audi");
-/* adapted KT 
-   should extract information from sound file at this point */
-/*
- text_line s;
- strcpy(s,"format (0=samples,1=bytes,2=wave,3=b16,4=b08,5=pcm) ");
- get_one_integer(usual,s,&w);
-*/
- w = inSoundFileFormat;
- if (w != 2) { printf("KT MUST CHECK NON-WAV FORMAT !!!!!!!!!!!!"); } // TBI
- bytes=(w==1);
- strcpy(filename_prefix,"");
- if (w>1) set_sigioread_format(w);
- factor=1.0;
 }
 
 // -----------------------------------------------------------------------------
@@ -131,42 +105,47 @@ void file_information(long inSoundFileFormat)
 // -----------------------------------------------------------------------------
 // Main entry point for the auditory model
 
-long AudiProg (long inNumOfChannels, double inFirstFreq, double inFreqDist,
-			const char* inInputFileName, const char* inInputFilePath,
-			const char* inOutputFileName, const char* inOutputFilePath,
-			double inSampleFrequency, long inSoundFileFormat)
+long AudiProg(long inNumOfChannels, double inFirstFreq, double inFreqDist,
+			  const char *inInputFileName, const char *inInputFilePath,
+			  const char *inOutputFileName, const char *inOutputFilePath,
+			  double inSampleFrequency, long inSoundFileFormat)
 {
-	long theLength = 0;
 	long theResult = 0;
-	char theOutputFile[256]; 
+	char theOutputFile[256];
 
-	file_information(inSoundFileFormat); 
-	
+	if (inSoundFileFormat < 2){
+		printf("No longer support format code < 2!!! EDWARDCHEN");
+		return -1;
+	}
+
+	set_sigioread_format(inSoundFileFormat);
+
 	// Setup input file
-	theLength = strlen(inInputFilePath);
-	if (theLength == 0) infile[0] = '\0';
+	if (strlen(inInputFilePath) == 0)
+		infile[0] = '\0';
 	else
 	{
-		strcpy(infile,inInputFilePath);
-		strcat(infile,"/");
+		strcpy(infile, inInputFilePath);
+		strcat(infile, "/");
 	}
-	strcat(infile,inInputFileName);
-	
+	strcat(infile, inInputFileName);
+
 	// Setup output file
-	theLength = strlen(inOutputFilePath);
-	if (theLength == 0) theOutputFile[0] = '\0';
+	if (strlen(inOutputFilePath) == 0)
+		theOutputFile[0] = '\0';
 	else
 	{
-		strcpy(theOutputFile,inOutputFilePath);
-		strcat(theOutputFile,"/");
+		strcpy(theOutputFile, inOutputFilePath);
+		strcat(theOutputFile, "/");
 	}
-	strcat(theOutputFile,inOutputFileName);
+	strcat(theOutputFile, inOutputFileName);
 
-	// strcpy(outfile,"outfile.dat");
+	theResult = startup_audiprog(inNumOfChannels, inFirstFreq, inFreqDist, inSampleFrequency);
 
-	theResult = startup_audiprog(bytes,&nspect,&nr_of_par,
-								 inNumOfChannels,inFirstFreq,inFreqDist,inSampleFrequency);
-	if (theResult != 0) return theResult;
-
-	return analyse_signal(theOutputFile);
+	if (theResult == 0)
+		return analyse_signal(theOutputFile);		
+	else
+		return theResult;
+		
+	
 }

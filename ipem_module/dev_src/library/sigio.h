@@ -25,8 +25,8 @@
 extern void startup_sigio();
 extern double expansion(int indx);
 extern int compression(double x);
-extern double new_sample(int bytes,int *last);
-extern void write_sample(int bytes,int last,double x);
+extern double new_sample(int *last);
+extern void write_sample(int last,double x);
 extern void set_sigioread_format(int format);
 
 #endif /* !defined( SIGIO_H ) */

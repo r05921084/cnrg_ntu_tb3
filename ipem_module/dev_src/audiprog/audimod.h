@@ -25,8 +25,7 @@
 #include <command.h>
 #include <pario.h>
 
-extern long startup_audiprog(int bytes,int *nspect,int *npar,
-							 long inNumOfChannels,double inFirstFreq,double inFreqDist,double inSampleFrequency);
+extern long startup_audiprog(long inNumOfChannels,double inFirstFreq,double inFreqDist,double inSampleFrequency);
 extern int init_analysis(text_line filename,const char* inOutputFileName);
 extern int one_frame(int *last,parameters frame);
 extern void finish_analysis();

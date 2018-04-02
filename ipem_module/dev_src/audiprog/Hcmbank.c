@@ -63,7 +63,7 @@ static FILE*    sEnvelopeFile = NULL;	/* The file in which the envelopes of
 int HCMBank_OpenEnvelopeFile (const char* inFileNameWithPath)
 {
 	sEnvelopeFile = fopen(inFileNameWithPath,"wb");
-	return (sEnvelopeFile == NULL) ? 0 : 1;
+	return sEnvelopeFile;
 }
 
 /* Close the firing probability envelope file. */
@@ -194,8 +194,6 @@ void setup_hcmbank()
           /* 0.25 because f(0) = 4w(0) = 4g2.f(0)/(1+b1+b2) */
  }
  bias=sqrt(yref*fsat/fspont)-sqrt(yref); factor2=fsat/pow(bias,2.0);
-//  write_lpf();
-//  write_eef();
 }
 
 
