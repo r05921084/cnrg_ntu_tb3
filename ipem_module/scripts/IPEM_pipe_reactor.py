@@ -7,12 +7,10 @@ from std_msgs.msg import String
 
 
 RATE = 22050
-TOPIC_NAME = 'audio_stream_raw'
-NODE_NAME = 'IPEM_pipe_reactor'
 
 
 def reactor():
-    rospy.init_node(NODE_NAME, anonymous=False)
+    rospy.init_node('IPEM_pipe_reactor', anonymous=False)
 
     pub_L = rospy.Publisher('audio_stream_ani_L', String, queue_size=1)
     pub_R = rospy.Publisher('audio_stream_ani_R', String, queue_size=1)
@@ -34,7 +32,7 @@ def reactor():
         ipem_L.feed_pcm_samples(np_data[:, 0].tostring())
         ipem_R.feed_pcm_samples(np_data[:, 1].tostring())
 
-    rospy.Subscriber(TOPIC_NAME, String, callback)
+    rospy.Subscriber('audio_stream_raw', String, callback)
 
     try:
         rospy.spin()
