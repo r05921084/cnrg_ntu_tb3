@@ -8,8 +8,8 @@ from std_msgs.msg import Float32
 from binaural_microphone.msg import BinauralAudio
 
 
-RATE = 22050
-CHUNK = 1024
+SAMPLE_RATE = 22050
+CHUNK_SIZE= 1024
 CHANNELS = 2
 FORMAT = pyaudio.paInt16
 
@@ -23,8 +23,8 @@ if __name__ == '__main__':
 
     audio = pyaudio.PyAudio()
     stream = audio.open(format=FORMAT, channels=CHANNELS,
-                        rate=RATE, input=True,
-                        frames_per_buffer=CHUNK)
+                        rate=SAMPLE_RATE, input=True,
+                        frames_per_buffer=CHUNK_SIZE)
 
     try:
         rospy.init_node(NODE_NAME, anonymous=False)
@@ -36,18 +36,17 @@ if __name__ == '__main__':
         rospy.loginfo('"%s" starts publishing to "%s".' % (NODE_NAME, TOPIC_NAME))
         
         while not rospy.is_shutdown():
-            data = stream.read(CHUNK)
+            data = stream.read(CHUNK_SIZE)
             np_data = np.fromstring(data, dtype=np.int16).reshape([-1, 2])        
-            
+            rospy.loginfo(np_data.shape)
             ba = BinauralAudio()
             ba.header.stamp = rospy.Time.now()
             ba.header.frame_id = NODE_NAME
             ba.type = 'PCM Int16'
-            ba.sample_rate = RATE
-            ba.chunk_size = CHUNK
+            ba.sample_rate = SAMPLE_RATE
+            ba.chunk_size = CHUNK_SIZE
             ba.left_channel = np_data[:, 0]
-            ba.right_channel = np_data[:, 1]
-            rospy.loginfo(ba.header.seq)
+            ba.right_channel = np_data[:, 1]                        
             raw_pub.publish(ba)
 
             rms_L_pub.publish(np.sqrt(np.mean(np.square(np_data[:, 0].astype(np.float)))))
