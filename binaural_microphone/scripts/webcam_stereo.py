@@ -4,50 +4,57 @@ import pyaudio
 import numpy as np
 
 import rospy
-from std_msgs.msg import String
 from std_msgs.msg import Float32
+from binaural_microphone.msg import BinauralAudio
 
 
-def microphone_recorder():
-    rospy.init_node(NODE_NAME, anonymous=False)
-    raw_pub = rospy.Publisher(TOPIC_NAME, String, queue_size=10)
-    rms_L_pub = rospy.Publisher('audio_rms_L', Float32, queue_size=1)
-    rms_R_pub = rospy.Publisher('audio_rms_R', Float32, queue_size=1)
+RATE = 22050
+CHUNK = 1024
+CHANNELS = 2
+FORMAT = pyaudio.paInt16
 
-    rospy.loginfo('"%s" starts publishing to "%s".' % (NODE_NAME, TOPIC_NAME))
+TOPIC_NAME = 'source_stream'
+NODE_NAME = 'webcam_stereo'
 
-    while not rospy.is_shutdown():
-        data = stream.read(CHUNK)
-        rospy.loginfo(len(data))
-        raw_pub.publish(data)
-        np_data = np.fromstring(data, dtype=np.int16).reshape([-1, 2]).astype(np.float)
-        rms_L_pub.publish(np.sqrt(np.mean(np.square(np_data[:, 0]))))
-        rms_R_pub.publish(np.sqrt(np.mean(np.square(np_data[:, 1]))))
+RMS_TOPIC_NAME = 'source_rms'
 
 
 if __name__ == '__main__':
 
-    FORMAT = pyaudio.paInt16
-    CHANNELS = 2
-    RATE = 22050
-    CHUNK = 1024
-    RECORD_SECONDS = 1
-
-    TOPIC_NAME = 'audio_stream_raw'
-    NODE_NAME = 'webcam_stereo'
-
     audio = pyaudio.PyAudio()
-
-    # start Recording
     stream = audio.open(format=FORMAT, channels=CHANNELS,
                         rate=RATE, input=True,
                         frames_per_buffer=CHUNK)
+
     try:
-        microphone_recorder()
+        rospy.init_node(NODE_NAME, anonymous=False)
+
+        raw_pub = rospy.Publisher(TOPIC_NAME, BinauralAudio, queue_size=1)
+        rms_L_pub = rospy.Publisher(RMS_TOPIC_NAME + '/L', Float32, queue_size=1)
+        rms_R_pub = rospy.Publisher(RMS_TOPIC_NAME + '/R', Float32, queue_size=1)
+
+        rospy.loginfo('"%s" starts publishing to "%s".' % (NODE_NAME, TOPIC_NAME))
+        
+        while not rospy.is_shutdown():
+            data = stream.read(CHUNK)
+            np_data = np.fromstring(data, dtype=np.int16).reshape([-1, 2])        
+            
+            ba = BinauralAudio()
+            ba.header.stamp = rospy.Time.now()
+            ba.header.frame_id = NODE_NAME
+            ba.type = 'PCM Int16'
+            ba.sample_rate = RATE
+            ba.chunk_size = CHUNK
+            ba.left_channel = np_data[:, 0]
+            ba.right_channel = np_data[:, 1]
+            rospy.loginfo(ba.header.seq)
+            raw_pub.publish(ba)
+
+            rms_L_pub.publish(np.sqrt(np.mean(np.square(np_data[:, 0].astype(np.float)))))
+            rms_R_pub.publish(np.sqrt(np.mean(np.square(np_data[:, 1].astype(np.float)))))
     except rospy.ROSInterruptException:
         pass
     finally:
-        # stop Recording
         stream.stop_stream()
         stream.close()
         audio.terminate()
