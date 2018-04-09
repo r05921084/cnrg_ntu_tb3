@@ -5,6 +5,8 @@ import rospy
 from std_msgs.msg import String
 import threading
 import time
+import numpy as np
+
 
 def callback(data):
     global frames
@@ -54,7 +56,7 @@ frames = []
 
 if __name__ == '__main__':
     try:
-        rospy.init_node('jc_detector', anonymous=True)
+        rospy.init_node('acoustic_anomaly_detector', anonymous=True)
         get_raw_audio()
         talker()
     except rospy.ROSInterruptException:
