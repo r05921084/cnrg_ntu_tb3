@@ -1,0 +1,3 @@
+<launch>
+  <node name="acoustic_anomaly_detector" pkg="acoustic_anomaly" type="acoustic_anomaly_detector.py" />
+</launch>
