@@ -1,2 +1,3 @@
-**Usage:**
-$roslaunch binaural_microphone basic.launch
+Usage
+-----
+```$roslaunch binaural_microphone basic.launch```
