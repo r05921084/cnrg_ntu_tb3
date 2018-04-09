@@ -57,22 +57,24 @@ def reactor():
 
     try:
         # rospy.spin()
-        while (not rospy.is_shutdown()) and ipem_L_ready.wait(1) and ipem_R_ready.wait(1):
-            ipem_L_np = np.hstack([ipem_L_results.popleft() for _ in range(CHUNK_SIZE)])
-            ipem_R_np = np.hstack([ipem_R_results.popleft() for _ in range(CHUNK_SIZE)])
-            ipem_L_ready.clear()
-            ipem_R_ready.clear()
+        while not rospy.is_shutdown():
+            while ipem_L_ready.wait(1) and ipem_R_ready.wait(1):
+                ipem_L_np = np.hstack([ipem_L_results.popleft() for _ in range(CHUNK_SIZE)])
+                ipem_R_np = np.hstack([ipem_R_results.popleft() for _ in range(CHUNK_SIZE)])
+                ipem_L_ready.clear()
+                ipem_R_ready.clear()
 
-            ani = AuditoryNerveImage()
-            ani.header.stamp = rospy.Time.now()
-            ani.sample_rate = SAMPLE_RATE
-            ani.chunk_size = CHUNK_SIZE
-            ani.n_subchannels = N_SUBCHANNELS
-            ani.left_channel = ipem_L_np
-            ani.right_channel = ipem_R_np
+                ani = AuditoryNerveImage()
+                ani.header.stamp = rospy.Time.now()
+                ani.sample_rate = SAMPLE_RATE
+                ani.chunk_size = CHUNK_SIZE
+                ani.n_subchannels = N_SUBCHANNELS
+                ani.left_channel = ipem_L_np
+                ani.right_channel = ipem_R_np
 
-            ani_pub.publish(ani)
+                ani_pub.publish(ani)
 
+            rospy.loginfo('main loop time out!')
     finally:
         ipem_L.close()
         ipem_R.close()
