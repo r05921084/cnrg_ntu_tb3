@@ -1,0 +1,12 @@
+<launch>
+  <arg name="camera" default="camera" />
+  
+  <!-- Realsense driver -->
+  <include file="$(find realsense_rgbd_camera)/launch/r200_camera_driver.launch">
+    <arg name="$(arg camera)" default="camera"/>  
+  </include>
+ 
+  <!-- RViz -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find cnrg_ntu_tb3)/params/r200_people_tracking.rviz"/>
+  
+</launch>
