@@ -4,12 +4,20 @@
   <description>metapackage of cnrg_ntu_tb3</description>
   <maintainer email="edward17829991@gmail.com">Edward Chen</maintainer>
   <maintainer email="q253upng@gmail.com">Shih Hung Tseng</maintainer>
+  <maintainer email="cjerry1243@gmail.com">Jerry Chang</maintainer>
+  <maintainer email="mikecool77882000@gmail.com">YYLMike</maintainer>
+  <maintainer email="Rick_Cheng@to.do">Rick_Cheng</maintainer>
+  
   <license>TODO</license>
   
   <buildtool_depend>catkin</buildtool_depend>
 
   <run_depend>binaural_microphone</run_depend>
   <run_depend>realsense_rgbd_camera</run_depend>
+  <run_depend>acoustic_anomaly</run_depend>
+  <run_depend>ipem_module</run_depend>
+  <run_depend>keyboardIO</run_depend>
+  <run_depend>video_falling_detection</run_depend>
 
   <export>
     <metapackage/> 
