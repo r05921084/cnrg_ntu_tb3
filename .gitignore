@@ -1,3 +1,4 @@
 *.DS_Store
 *.pyc
 100features_20context_20mincount_zht*
+ipem_module/dev_src/*.dat
