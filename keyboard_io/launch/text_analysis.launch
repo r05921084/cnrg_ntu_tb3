@@ -1,0 +1,6 @@
+<launch>
+
+<node pkg='keyboardIO' type='talker.py' name='talker' output='screen' launch-prefix='gnome-terminal --command'/>
+<node pkg='keyboardIO' type='listener.py' name='listener' output='screen' />
+</launch>
+

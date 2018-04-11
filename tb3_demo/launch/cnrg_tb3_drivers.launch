@@ -1,0 +1,10 @@
+<launch>
+
+  <arg name="camera" default="camera" />
+  
+  <!-- Realsense driver -->
+  <include file="$(find realsense_rgbd_camera)/launch/r200_camera_driver.launch">
+    <arg name="$(arg camera)" default="camera"/>  
+  </include>
+
+</launch>
