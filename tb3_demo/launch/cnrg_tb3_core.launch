@@ -1,14 +1,16 @@
 <launch>
+  
+  <arg name="launch_anomaly" default="false"/>
 
   <!-- List of drivers  
     - Intel realsense r200 camera
     - Binaural microphone
     - Keyboard IO
   -->
-  <include file="$(find tb3_demo)/launch/cnrg_tb3_drivers.launch" />
+  <include file="$(find tb3_demo)/launch/cnrg_tb3_drivers.launch.xml" />
   
   <!-- Anomaly detection-->
-  <include file="$(find acoustic_anomaly)/launch/publish_acoustic_anomaly.launch" />
+  <include file="$(find acoustic_anomaly)/launch/publish_acoustic_anomaly.launch" if="$(arg launch_anomaly)"/>
 
   <node name="rviz" pkg="rviz" type="rviz" />
 

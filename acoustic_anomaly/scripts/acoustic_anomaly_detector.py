@@ -16,7 +16,10 @@ def callback(data):
 
 def model():
     global frames
-    np_data = np.vstack(frames)
+    try:
+        np_data = np.vstack(frames)
+    except ValueError:
+        pass
     frames = []
     ### Anomaly detection model here!!
     print 'start model'
