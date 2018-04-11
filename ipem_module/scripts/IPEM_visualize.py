@@ -10,7 +10,8 @@ from ipem_module.msg import AuditoryNerveImage
 
 
 NODE_NAME = 'ipem_visualizer'
-SUB_TOPIC_NAME = '/ipem_module/apm_stream'
+SUB_TOPIC_NAME = 'apm_stream'
+PUB_TOPIC_NAME = '/visualization_marker'
 
 
 def hsva_to_rgba(h, s, v, a=1.0):
@@ -38,7 +39,7 @@ def hsva_to_rgba(h, s, v, a=1.0):
 
 def visualizer():
     rospy.init_node(NODE_NAME, anonymous=False)
-    marker_publisher = rospy.Publisher('visualization_marker', Marker, queue_size=1)
+    marker_publisher = rospy.Publisher(PUB_TOPIC_NAME, Marker, queue_size=1)
     
     def ani_cb(data):
         points_L = [Point(0.01 * i - data.chunk_size * 0.005, 0.1 * j + 0.5, data.left_channel[i * 40 + j] * 10) for j in range(data.n_subchannels) for i in range(0, data.chunk_size, 10)]

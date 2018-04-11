@@ -1,7 +1,7 @@
 <launch>
-  <node ns="ipem_module" name="IPEM_visualize" pkg="ipem_module" type="IPEM_visualize.py" output="screen" />
+  <node ns="ipem_module" name="IPEM_visualize" pkg="ipem_module" type="IPEM_visualize.py"/>
 
   <!-- RViz -->
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find cnrg_ntu_tb3)/ipem_module/rviz/show_marker.rviz" />
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find ipem_module)/rviz/show_marker.rviz" />
 
 </launch>
