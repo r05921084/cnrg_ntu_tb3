@@ -1,17 +1,36 @@
 <launch>
   
-  <arg name="launch_anomaly" default="false"/>
+  <!-- Args for modules -->
+  <arg name="launch_anomaly" default="true"/>
+  <arg name="launch_people_detect" default="false"/>
+
+  <!-- Args for driver -->
+  <arg name="launch_r200" default="true"/>
+  <arg name="launch_keyboard_io" default="true"/>
+  <arg name="launch_logitech" default="true"/>
+
+  <arg name="rviz" default="true"/>
 
   <!-- List of drivers  
     - Intel realsense r200 camera
     - Binaural microphone
     - Keyboard IO
   -->
-  <include file="$(find tb3_demo)/launch/cnrg_tb3_drivers.launch.xml" />
+  <include file="$(find tb3_demo)/launch/cnrg_tb3_drivers.launch.xml">
+    <arg name="launch_r200" value="$(arg launch_r200)"/>
+    <arg name="launch_keyboard_io" value="$(arg launch_keyboard_io)"/>
+    <arg name="launch_logitech" value="$(arg launch_logitech)"/>
+  </include>
   
-  <!-- Anomaly detection-->
+  <!-- Anomaly detection -->
   <include file="$(find acoustic_anomaly)/launch/publish_acoustic_anomaly.launch" if="$(arg launch_anomaly)"/>
 
-  <node name="rviz" pkg="rviz" type="rviz" />
+  <!-- RGB-D people detection -->
+  <include file="$(find turtlebot_follower_tracker)/launch/people_detection_nodelet.launch" if="$(arg launch_people_detect)">
+    <arg name="input" value="/realsense/camera/depth/points"/>
+    <arg name="nodelet_manager" value="$(arg launch_logitech)"/>
+  </include>
+
+  <node name="rviz" pkg="rviz" type="rviz" if="$(arg rviz)"/>
 
 </launch>

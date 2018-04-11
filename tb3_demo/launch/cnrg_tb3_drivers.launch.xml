@@ -1,7 +1,8 @@
 <launch>
 
-  <arg name="launch_r200" value="true"/>
-  <arg name="launch_keyboard_io" value="false"/>
+  <arg name="launch_r200" default="false"/>
+  <arg name="launch_keyboard_io" default="false"/>
+  <arg name="launch_logitech" default="false"/>
 
   <arg name="camera" default="camera" />
   
@@ -20,7 +21,7 @@
 
   <!-- Logitech camera -->
   <group ns="logitech" clear_params="true">
-    <node name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen" >
+    <node name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen" if="$(arg launch_logitech)">
       <param name="video_device" value="/dev/video0" />
       <param name="image_width" value="640" />
       <param name="image_height" value="480" />
