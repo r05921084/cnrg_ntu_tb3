@@ -1,2 +1,3 @@
 
 *.pyc
+ipem_module/dev_src/*.dat
