@@ -1,0 +1,34 @@
+<launch>
+
+  <arg name="launch_r200" default="false"/>
+  <arg name="launch_keyboard_io" default="false"/>
+  <arg name="launch_logitech" default="false"/>
+
+  <arg name="camera" default="camera" />
+  
+  <!-- Realsense r200 camera -->
+  <group ns="realsense" clear_params="true">
+    <include file="$(find realsense_rgbd_camera)/launch/r200_camera_driver.launch" if="$(arg launch_r200)">
+      <arg name="$(arg camera)" default="camera"/>  
+    </include>
+  </group>
+
+  <!-- Binaural microphone -->
+  <include file="$(find binaural_microphone)/launch/basic.launch" />
+
+  <!-- Keyboard IO -->
+  <include file="$(find keyboard_io)/launch/text_analysis.launch" if="$(arg launch_keyboard_io)"/>
+
+  <!-- Logitech camera -->
+  <group ns="logitech" clear_params="true">
+    <node name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen" if="$(arg launch_logitech)">
+      <param name="video_device" value="/dev/video0" />
+      <param name="image_width" value="640" />
+      <param name="image_height" value="480" />
+      <param name="pixel_format" value="yuyv" />
+      <param name="camera_frame_id" value="usb_cam" />
+      <param name="io_method" value="mmap"/>
+    </node>
+  </group>
+
+</launch>

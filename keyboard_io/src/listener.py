@@ -9,7 +9,7 @@ import numpy as np
 import rospkg
 
 rospack = rospkg.RosPack()
-path = rospack.get_path('keyboardIO')
+path = rospack.get_path('keyboard_io')
 
 w2v_model = syntactic_extract.load_wordvec_model(path+'/src/100features_20context_20mincount_zht')
 print('load model success')
