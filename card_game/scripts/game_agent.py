@@ -1,4 +1,4 @@
-#!/usr/bin/env/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import os
@@ -39,7 +39,7 @@ praise1 = ["很接近了", "可惜，差點就答對了"]
 
 test = ["請問這張牌是什麼呢？"]
 
-import os
+
 filepath = os.path.dirname(os.path.abspath(__file__))
 cards_all = os.listdir(os.path.join(filepath, 'static', 'images'))
 cards_all.remove('ques.png')
@@ -47,7 +47,6 @@ cards_all.sort()
 
 f = open(os.path.join(filepath, 'card_property.json'), 'r')
 card_property = json.load(f)
-# card_property = json.load(f, encoding='utf8')
 f.close()
 
 
@@ -212,8 +211,11 @@ settings = dict(
     debug=True,
     autoreload=True,
     compiled_template_cache=False,
+    # os.path.abspath(__file__)
     static_path=os.path.join(os.path.dirname(__file__), "static"),
     template_path=os.path.join(os.path.dirname(__file__), "templates")
+    # static_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "static"),
+    # template_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
 )
 
 class Application(web.Application):
@@ -228,7 +230,7 @@ class Application(web.Application):
 
 def main():
     rospy.init_node('game_agent', anonymous=True)
-    rospy.Subscriber("dialog", String, callback)
+    rospy.Subscriber("chatter", String, callback)
     options.parse_command_line()
     app = Application()
     app.listen(options.port, options.ip)
