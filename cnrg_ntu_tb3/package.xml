@@ -18,6 +18,7 @@
   <run_depend>ipem_module</run_depend>
   <run_depend>keyboardIO</run_depend>
   <run_depend>video_falling_detection</run_depend>
+  <run_depend>tb3_demo</run_depend>
 
   <export>
     <metapackage/> 

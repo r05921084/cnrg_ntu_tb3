@@ -52,7 +52,7 @@ if __name__ == '__main__':
                 chunk_size=CHUNK_SIZE,
                 left_channel=np_data[:, 0],
                 right_channel=np_data[:, 1]
-            )                 
+            )
             raw_pub.publish(ba)
             raw_str_pub.publish(raw_str)
 

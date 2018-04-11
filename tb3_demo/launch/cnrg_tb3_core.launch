@@ -1,0 +1,5 @@
+<launch>
+  <include file="$(find tb3_demo)/launch/cnrg_tb3_drivers.launch" />
+
+  <node name="rviz" pkg="rviz" type="rviz" />
+</launch>

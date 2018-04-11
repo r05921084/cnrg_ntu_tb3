@@ -24,7 +24,6 @@ def reactor():
     rospy.init_node(NODE_NAME, anonymous=False)
 
     ani_pub = rospy.Publisher(PUB_TOPIC_NAME, AuditoryNerveImage, queue_size=1)
-    
     ipem_L_results = deque()
     ipem_L_ready = Event()
 
@@ -64,7 +63,6 @@ def reactor():
                 ipem_R_np = np.hstack([ipem_R_results.popleft() for _ in range(CHUNK_SIZE)])
                 ipem_L_ready.clear()
                 ipem_R_ready.clear()
-
                 ani = AuditoryNerveImage(
                     header=Header(
                         stamp=rospy.Time.now()
