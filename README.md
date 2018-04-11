@@ -29,5 +29,9 @@ This project directory should be put in catkin_ws/src directory and build with c
 
 Logs
 ----
-2018/03/29, First created by Edward Chen (<edward17829991@gmail.com>, <r05942027@ntu.edu.tw>)
+2018/03/29, First created.
 
+
+Meeting Slides
+--------------
+2018/04/11, <https://docs.google.com/presentation/d/1Rb6X7VvOhhEzZsVvEuIa5H-ThqmOp9dcSH30ZEgZ8Ks/edit?usp=sharing>
