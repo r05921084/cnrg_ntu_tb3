@@ -16,7 +16,7 @@ N_SUBCHANNELS = 40
 CHUNK_SIZE= 1024
 FIFO_PATH = '/tmp/IPEM'
 NODE_NAME = 'IPEM_pipe_reactor'
-SUB_TOPIC_NAME = '/binaural_audio/source_stream'
+SUB_TOPIC_NAME = 'source_stream'
 PUB_TOPIC_NAME = 'apm_stream'
 
 
