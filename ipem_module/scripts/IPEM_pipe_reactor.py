@@ -6,6 +6,7 @@ from IPEM_pipe import IPEM_pipe
 
 import rospy
 from std_msgs.msg import String
+from std_msgs.msg import Header
 from binaural_microphone.msg import BinauralAudio
 from ipem_module.msg import AuditoryNerveImage
 
@@ -23,8 +24,6 @@ def reactor():
     rospy.init_node(NODE_NAME, anonymous=False)
 
     ani_pub = rospy.Publisher(PUB_TOPIC_NAME, AuditoryNerveImage, queue_size=1)
-    rospy.loginfo('"%s" starts subscribing to "%s".' % (NODE_NAME, SUB_TOPIC_NAME))
-
     ipem_L_results = deque()
     ipem_L_ready = Event()
 
@@ -54,6 +53,7 @@ def reactor():
         ipem_R.feed_pcm_samples(np.array(data.right_channel, dtype=np.int16).tobytes())
 
     rospy.Subscriber(SUB_TOPIC_NAME, BinauralAudio, feed_ipem)
+    rospy.loginfo('"%s" starts subscribing to "%s".' % (NODE_NAME, SUB_TOPIC_NAME))
 
     try:
         # rospy.spin()
@@ -63,15 +63,16 @@ def reactor():
                 ipem_R_np = np.hstack([ipem_R_results.popleft() for _ in range(CHUNK_SIZE)])
                 ipem_L_ready.clear()
                 ipem_R_ready.clear()
-
-                ani = AuditoryNerveImage()
-                ani.header.stamp = rospy.Time.now()
-                ani.sample_rate = SAMPLE_RATE
-                ani.chunk_size = CHUNK_SIZE
-                ani.n_subchannels = N_SUBCHANNELS
-                ani.left_channel = ipem_L_np
-                ani.right_channel = ipem_R_np
-
+                ani = AuditoryNerveImage(
+                    header=Header(
+                        stamp=rospy.Time.now()
+                    ),
+                    sample_rate=SAMPLE_RATE,
+                    chunk_size=CHUNK_SIZE,
+                    n_subchannels=N_SUBCHANNELS,
+                    left_channel=ipem_L_np,
+                    right_channel=ipem_R_np
+                )
                 ani_pub.publish(ani)
 
             rospy.loginfo('main loop time out!')
@@ -84,4 +85,4 @@ if __name__ == '__main__':
     try:
         reactor()
     except rospy.ROSInterruptException as e:
-        rospy.logerror(e)
+        rospy.logerr(e)

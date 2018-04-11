@@ -7,6 +7,7 @@ import time
 import rospy
 from std_msgs.msg import Float32
 from std_msgs.msg import String
+from std_msgs.msg import Header
 from binaural_microphone.msg import BinauralAudio
 
 
@@ -39,17 +40,19 @@ if __name__ == '__main__':
         rospy.loginfo('"%s" starts publishing to "%s".' % (NODE_NAME, TOPIC_NAME))
         
         while not rospy.is_shutdown():
-            ba = BinauralAudio()
-            ba.header.frame_id = NODE_NAME
-            ba.type = 'PCM Int16'
-            ba.sample_rate = SAMPLE_RATE
-            ba.chunk_size = CHUNK_SIZE
-
             raw_str = stream.read(CHUNK_SIZE)
-            np_data = np.frombuffer(raw_str, dtype=np.int16).reshape([-1, 2])            
-            ba.header.stamp = rospy.Time.now()            
-            ba.left_channel = np_data[:, 0]
-            ba.right_channel = np_data[:, 1]                        
+            np_data = np.frombuffer(raw_str, dtype=np.int16).reshape([-1, 2])
+            ba = BinauralAudio(
+                header=Header(
+                    frame_id=NODE_NAME,
+                    stamp=rospy.Time.now()
+                    ),
+                type='PCM Int16',
+                sample_rate=SAMPLE_RATE,
+                chunk_size=CHUNK_SIZE,
+                left_channel=np_data[:, 0],
+                right_channel=np_data[:, 1]
+            )
             raw_pub.publish(ba)
             raw_str_pub.publish(raw_str)
 

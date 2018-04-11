@@ -7,6 +7,6 @@
   </include>
  
   <!-- RViz -->
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find realsense_rgbd_camera)/params/r200_people_tracking.rviz"/>
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find cnrg_ntu_tb3)/params/r200_people_tracking.rviz"/>
   
 </launch>
