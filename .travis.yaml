@@ -7,8 +7,8 @@ notifications:
   email:
     on_success: always
     on_failure: always
-   recipients:
-     - r03921064@ntu.edu.tw
+    recipients:
+      - r03921064@ntu.edu.tw
 env:
   matrix:
     - USE_DEB=true  ROS_DISTRO="kinetic"   ROS_REPOSITORY_PATH=http://packages.ros.org/ros/ubuntu
