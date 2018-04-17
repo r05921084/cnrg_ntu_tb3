@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import numpy as np
+import numba
 import time
 
 import rospy
@@ -10,7 +11,7 @@ from binaural_microphone.msg import BinauralAudio
 from ipem_module.msg import AuditoryNerveImage
 
 
-NODE_NAME = 'ipem_visualize_split'
+NODE_NAME = 'ipem_visualize_difference'
 SUB_TOPIC_NAME = 'apm_stream'
 PUB_TOPIC_NAME = '/visualization_marker'
 CHUNK_SIZE = 1024
@@ -51,28 +52,30 @@ def visualizer():
     marker_publisher = rospy.Publisher(PUB_TOPIC_NAME, Marker, queue_size=1)
     
     def setup_objects():
-        global pos, clr, points, colors
+        global pos, clr, history, points, colors
         t1 = time.time()
         pos = np.zeros([2, CHUNK_SIZE, N_SUBCHANNELS, 3])        
         pos[:, :, :, 0] = np.arange(CHUNK_SIZE).reshape([CHUNK_SIZE, 1]) * X_SPACING + np.zeros(N_SUBCHANNELS) - CHUNK_SIZE * X_SPACING / 2
         pos[:, :, :, 1] = np.arange(N_SUBCHANNELS) * Y_SPACING + Y_SPLIT_SPACING / 2
         pos[0, :, :, 1] += (- Y_SPLIT_SPACING - N_SUBCHANNELS * Y_SPACING)
 
+        history = np.zeros([2, CHUNK_SIZE, N_SUBCHANNELS])
+
         clr = np.zeros([2, CHUNK_SIZE, N_SUBCHANNELS, 4])
         for j in range(N_SUBCHANNELS):
-            clr[:, :, j, :] = np.array(hsva_to_rgba(0.67 - 0.67 * j / N_SUBCHANNELS, 1.0, 1.0, 1.0))
-        
+            clr[:, :, j, :] = np.array(hsva_to_rgba(0.67 - 0.67 * j / N_SUBCHANNELS, 1.0, 1.0, 1.0))        
 
         points = [Point(*pos[s, i, j]) for s in range(2) for i in range(0, CHUNK_SIZE, RENDER_STRIDE) for j in range(N_SUBCHANNELS)]
         colors = [ColorRGBA(*clr[s, i, j]) for s in range(2) for i in range(0, CHUNK_SIZE, RENDER_STRIDE) for j in range(N_SUBCHANNELS)]
         
         rospy.loginfo('setup_objects() done it %f sec.' % (time.time() - t1))
 
+    # @numba.jit(parallel=True)
     def update_height(z_0, z_1):
         pos[0, :, :, 2] = z_0 * Z_SCALING
         pos[1, :, :, 2] = z_1 * Z_SCALING
-        clr[0, :, :, 3] = np.clip(np.abs(z_0) * 3, 0., 1.)
-        clr[1, :, :, 3] = np.clip(np.abs(z_1) * 3, 0., 1.)
+        # clr[0, :, :, 3] = np.clip(np.abs(z_0) * 3, 0., 1.)
+        # clr[1, :, :, 3] = np.clip(np.abs(z_1) * 3, 0., 1.)
 
     setup_objects()
 
@@ -89,7 +92,13 @@ def visualizer():
         L_np = np.array(data.left_channel).reshape( [CHUNK_SIZE, N_SUBCHANNELS])
         R_np = np.array(data.right_channel).reshape([CHUNK_SIZE, N_SUBCHANNELS])
 
-        update_height(L_np, R_np)
+        global history
+        history = np.roll(history, 1, axis=1)
+        # history[:, 1:, :] = history[:, :-1, :]
+        history[0, 0] = np.mean(L_np + R_np, axis=0)
+        history[1, 0] = np.mean(L_np - R_np, axis=0) * 10
+
+        update_height(history[0], history[1])
 
         for s in range(2):        
             for i in range(0, CHUNK_SIZE, RENDER_STRIDE):
