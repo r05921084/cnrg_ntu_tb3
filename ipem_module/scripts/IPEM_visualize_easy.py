@@ -12,8 +12,6 @@ from ipem_module.msg import AuditoryNerveImage
 NODE_NAME = 'ipem_visualizer'
 SUB_TOPIC_NAME = 'apm_stream'
 PUB_TOPIC_NAME = '/visualization_marker'
-CHUNK_SIZE = 1024
-N_SUBCHANNELS = 40
 
 
 def hsva_to_rgba(h, s, v, a=1.0):
@@ -42,24 +40,31 @@ def hsva_to_rgba(h, s, v, a=1.0):
 def visualizer():
     rospy.init_node(NODE_NAME, anonymous=False)
     marker_publisher = rospy.Publisher(PUB_TOPIC_NAME, Marker, queue_size=1)
-
-    pos = np.zeros([2, CHUNK_SIZE, N_SUBCHANNELS, 3])
-    pos[:, :, :, 0] = np.arange(CHUNK_SIZE).reshape([-1, 1]) * 0.01 + np.zeros(N_SUBCHANNELS) - CHUNK_SIZE * 0.005
-    pos[:, :, :, 1] = np.arange(N_SUBCHANNELS) * 0.1 + 0.5
-    pos[1, :, :, 1] += (- 1.0 - N_SUBCHANNELS * 0.1)
-
-    clr = np.zeros([2, CHUNK_SIZE, N_SUBCHANNELS, 4])
-    for j in range(N_SUBCHANNELS):
-        clr[:, :, j, :] = np.array(hsva_to_rgba(0.67 - 0.67 * j / N_SUBCHANNELS, 1.0, 1.0, 1.0))
     
     def ani_cb(data):
-        pos[0, :, :, 2] = np.array(data.left_channel).reshape( [CHUNK_SIZE, N_SUBCHANNELS]) * 10
-        pos[1, :, :, 2] = np.array(data.right_channel).reshape([CHUNK_SIZE, N_SUBCHANNELS]) * 10
-        
-        points_L = [Point(*pos[0, i, j]) for j in range(N_SUBCHANNELS) for i in range(0, CHUNK_SIZE, 10)]
-        points_R = [Point(*pos[1, i, j]) for j in range(N_SUBCHANNELS) for i in range(0, CHUNK_SIZE, 10)]
-        colors_L = [ColorRGBA(*clr[0, i, j]) for j in range(N_SUBCHANNELS) for i in range(0, CHUNK_SIZE, 10)]
-        colors_R = [ColorRGBA(*clr[1, i, j]) for j in range(N_SUBCHANNELS) for i in range(0, CHUNK_SIZE, 10)]
+        points_L = [Point(0.01 * i - data.chunk_size * 0.005, 0.1 * j + 0.5, data.left_channel[i * 40 + j] * 10) for j in range(data.n_subchannels) for i in range(0, data.chunk_size, 10)]
+        points_R = [Point(0.01 * i - data.chunk_size * 0.005, 0.1 * j - 0.5 - data.n_subchannels * 0.1, data.right_channel[i * 40 + j] * 10) for j in range(data.n_subchannels) for i in range(0, data.chunk_size, 10)]
+        colors_L = [ColorRGBA(*hsva_to_rgba(0.67 - 0.67 * j / data.n_subchannels, 1.0, np.clip(data.left_channel[i * 40 + j] * 5, 0., 1.))) for j in range(data.n_subchannels) for i in range(0, data.chunk_size, 10)]
+        colors_R = [ColorRGBA(*hsva_to_rgba(0.67 - 0.67 * j / data.n_subchannels, 1.0, np.clip(data.right_channel[i * 40 + j] * 5, 0., 1.))) for j in range(data.n_subchannels) for i in range(0, data.chunk_size, 10)]
+        # points_L = points_R = []
+        # colors_L = colors_R = []
+        # for i in range(0, data.chunk_size, 10):
+        #     for j in range(data.n_subchannels):
+        #         points_L.append(
+        #             Point(
+        #                 0.01 * i - data.chunk_size * 0.005,
+        #                 0.1 * j + 0.5,
+        #                 data.left_channel[i * 40 + j] * 10
+        #             )
+        #         )
+        #         colors_L.append(
+        #             ColorRGBA(
+        #                 *hsva_to_rgba(0.67 - 0.67 * j / data.n_subchannels,
+        #                     1.0,
+        #                     np.clip(data.left_channel[i * 40 + j] * 5, 0., 1.)
+        #                 )
+        #             )
+        #         )
         
         marker = Marker(
             header=Header(frame_id='/map'),
@@ -78,7 +83,7 @@ def visualizer():
         marker_publisher.publish(marker)
     
     rospy.Subscriber(SUB_TOPIC_NAME, AuditoryNerveImage, ani_cb)
-    print 'Subscribed'
+    # print 'Subscribed'
 
 
     r = rospy.Rate(1.)

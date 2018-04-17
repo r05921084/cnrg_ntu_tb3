@@ -76,7 +76,7 @@ def reactor():
                     header=Header(
                         stamp=rospy.Time.now()
                     ),
-                    sample_rate=SAMPLE_RATE,
+                    sample_rate=SAMPLE_RATE / 2,
                     chunk_size=CHUNK_SIZE,
                     n_subchannels=N_SUBCHANNELS,
                     left_channel=ipem_L_results,

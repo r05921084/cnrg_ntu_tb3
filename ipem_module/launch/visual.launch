@@ -1,5 +1,5 @@
 <launch>
-  <node ns="ipem_module" name="IPEM_visualize" pkg="ipem_module" type="IPEM_visualize_avg.py"/>
+  <node ns="ipem_module" name="IPEM_visualize" pkg="ipem_module" type="IPEM_visualize_split.py" output="screen"/>
 
   <!-- RViz -->
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find ipem_module)/rviz/show_marker.rviz" />
