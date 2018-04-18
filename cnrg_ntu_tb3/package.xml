@@ -16,9 +16,10 @@
   <run_depend>realsense_rgbd_camera</run_depend>
   <run_depend>acoustic_anomaly</run_depend>
   <run_depend>ipem_module</run_depend>
-  <run_depend>keyboardIO</run_depend>
+  <run_depend>keyboard_io</run_depend>
   <run_depend>video_falling_detection</run_depend>
   <run_depend>tb3_demo</run_depend>
+  <run_depend>card_game</run_depend>
 
   <export>
     <metapackage/> 
