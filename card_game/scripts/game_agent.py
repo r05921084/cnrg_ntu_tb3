@@ -207,6 +207,7 @@ def agent(websocket):
     total_time = np.sum(response_time)
     send_command('talk,共花了%d秒'%total_time)
     # send_command('talk,共花了{}秒'.format(int(total_time)))
+    rospy.signal_shutdown('Game Finished')
     
 
 
@@ -237,8 +238,13 @@ def main():
     options.parse_command_line()
     app = Application()
     app.listen(options.port, options.ip)
+
+    rospy.on_shutdown(ioloop.IOLoop.current().stop)
+
     ioloop.IOLoop.current().start()
 
-
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except rospy.ROSInterruptException as e:
+        print e
