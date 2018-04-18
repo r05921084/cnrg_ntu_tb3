@@ -5,12 +5,12 @@
   <arg name="launch_people_detect" default="false"/>
 
   <!-- Args for driver -->
-  <arg name="launch_r200" default="false"/>
-  <arg name="launch_keyboard_io" default="false"/>
-  <arg name="launch_logitech" default="true"/>
+  <arg name="launch_r200" default="true"/>
+  <arg name="launch_keyboard_io" default="true"/>
+  <arg name="launch_logitech" default="false"/>
   <arg name="launch_microphone" default="true"/>
   
-  <arg name="nodelet_manager" default="/realsense/camera/camera_nodelet_manager"/>
+  <!-- <arg name="nodelet_manager" default="/realsense/camera/camera_nodelet_manager"/ -->
 
   <arg name="rviz" default="false"/>
 
@@ -33,10 +33,10 @@
   <include file="$(find acoustic_anomaly)/launch/publish_acoustic_anomaly.launch" if="$(arg launch_anomaly)"/>
 
   <!-- RGB-D people detection -->
-  <include file="$(find turtlebot_follower_tracker)/launch/people_detection_nodelet.launch" if="$(arg launch_people_detect)">
+  <!--<include file="$(find turtlebot_follower_tracker)/launch/people_detection_nodelet.launch" if="$(arg launch_people_detect)">
     <arg name="input" value="/realsense/camera/depth/points"/>
     <arg name="nodelet_manager" value="$(arg nodelet_manager)"/>
-  </include>
+  </include> -->
 
   <!-- RViz -->
   <node name="rviz" pkg="rviz" type="rviz" if="$(arg rviz)"/>

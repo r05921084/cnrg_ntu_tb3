@@ -278,7 +278,7 @@ function fold() {
 }
 
 function webSocket_op() {
-    var wsUri = "ws://172.16.0.103:8888/socket";
+    var wsUri = "ws://172.16.0.130:8888/socket";
     websocket = new WebSocket(wsUri);
     websocket.onopen = function(evt) { 
         onOpen(evt);
