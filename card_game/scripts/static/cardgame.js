@@ -1,8 +1,6 @@
 
-
 var imgQues = new Image();
-// imgQues.src = "pic/ques.png";
-imgQues.src = "static/images/ques.png";
+imgQues.src = 'static/images/ques.png';
 var cards = new Array();
 var server_msg;
 var card_num;
@@ -11,16 +9,11 @@ var pre_card_idx = -1;
 webSocket_op();
 
 function loadImg(card_names){
-	// var imgQues = new Image();
-	// imgQues.src = "pic/ques.png";
-	
-	// var card_names = ["apple.png", "banana.png", "cat.png", "dog.png"];
 
 	for (var i=0; i<card_names.length; i++) {
 		cards[i] = new Image();
-		cards[i].src = "static/images/" + card_names[i];
-	} 
-
+		cards[i].src = 'static/images/' + card_names[i];
+	}
 }
 
 
@@ -192,7 +185,8 @@ function asking(content){
 	canvas.width=450;
 	canvas.height=600;
 	img = cards[card_idx];
-
+	ctx.fillStyle = "yellow";
+	ctx.fillRect(0, 0, canvas.width, canvas.height);
 	if (card_state[card_idx]){
 		ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 	}
