@@ -3,9 +3,7 @@ import numpy as np
 import time
 
 import rospy
-from std_msgs.msg import Float32
-from std_msgs.msg import String
-from std_msgs.msg import Header
+from std_msgs.msg import Header, String, Float32
 from binaural_microphone.msg import BinauralAudio
 
 
@@ -21,7 +19,7 @@ RMS_TOPIC_NAME = 'source_rms'
 
 FREQ_START = 1
 FREQ_STOP = 20000
-N_STEP = 1000
+N_STEP = 100
 AMPLITUDE = 0.5
 
 # for the 16-bit PCM audio signal -32768 to 32767, scaled to [-1 to 1)
@@ -29,25 +27,41 @@ AMPLITUDE = 0.5
 # min_db = 20*np.log10(1/32767) ~= -90.3 dB
 
 
+fixed_freq = 0.
+
+
+def freq_cb(data):
+    global fixed_freq
+    fixed_freq = data.data
+    rospy.loginfo('fixed_freq = %f' % fixed_freq)
+
+
+def ampl_cb(data):
+    global AMPLITUDE
+    AMPLITUDE = np.clip(data.data, -1., 1.)
+    rospy.loginfo('AMPLITUDE = %f' % AMPLITUDE)
+
+
 def pcm_sine_generator():
     freq = np.geomspace(FREQ_START, FREQ_STOP, N_STEP)
     data = np.zeros([CHUNK_SIZE, CHANNELS], dtype=np.int16)
-    t = np.linspace(0, FRAME_TIME, CHUNK_SIZE, endpoint=False)    
-    print freq
-    print t
+    t = np.linspace(0, FRAME_TIME, CHUNK_SIZE, endpoint=False)
+    rospy.loginfo(freq)
+    rospy.loginfo(t)
     while True:
         for i in range(N_STEP):
             f = freq[i]
+            if fixed_freq > 0.:
+                f = fixed_freq
             # f = 2000
             data[:, 0] = AMPLITUDE * 32767 * np.sin(2 * np.pi * f * t)
             data[:, 1] = AMPLITUDE * 32767 * np.cos(2 * np.pi * f * t)
             t += FRAME_TIME
-            rospy.loginfo('t = %fsec, f = %fHz' % (t[-1], f))
+            rospy.loginfo('A = %f, t = %fsec, f = %fHz' % (AMPLITUDE, t[-1], f))
             yield data
 
 
 if __name__ == '__main__':
-
     try:
         rospy.init_node(NODE_NAME, anonymous=False)
 
@@ -55,6 +69,9 @@ if __name__ == '__main__':
         rms_L_pub = rospy.Publisher(RMS_TOPIC_NAME + '/L', Float32, queue_size=1)
         rms_R_pub = rospy.Publisher(RMS_TOPIC_NAME + '/R', Float32, queue_size=1)
         # rms_D_pub = rospy.Publisher(RMS_TOPIC_NAME + '/debug', Float32, queue_size=1)
+
+        rospy.Subscriber('~frequency', Float32, freq_cb)
+        rospy.Subscriber('~amplitude', Float32, ampl_cb)
 
         rospy.loginfo('"%s" starts publishing to "%s".' % (NODE_NAME, TOPIC_NAME))
 
