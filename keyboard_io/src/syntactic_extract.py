@@ -6,6 +6,7 @@ import numpy as np
 
 WV_DIIM = 100
 def load_wordvec_model(file_name):
+	
 	w2v_model = gensim.models.Word2Vec.load(file_name)
 	words = []
 	for word in w2v_model.wv.vocab:
@@ -15,14 +16,9 @@ def load_wordvec_model(file_name):
 	print('Dimensions of word vector: {}'.format(len(w2v_model[words[0]])))
 	return w2v_model
 
-def pos_tag_analysis(sentence, segment_tool): # segment_tool, 0:jieba, 1: Ckip
-    if segment_tool=='jieba':
-    	word_pos = pseg.cut(sentence)
-    # elif segment_tool=='ckip':
-    # 	segmenter = ckip.CKIP()
-    # 	word_pos = segmenter.Segment(sentence)
-    # 	word_pos = word_pos.res
+def pos_tag_analysis(sentence):
     
+    word_pos = pseg.cut(sentence)
     tmp_n, tmp_v, tmp_a, tmp_r, tmp_token = 0.0, 0.0, 0.0, 0.0, 0.0
     word_type = collections.Counter()
     for word, flag in word_pos:
@@ -38,21 +34,11 @@ def pos_tag_analysis(sentence, segment_tool): # segment_tool, 0:jieba, 1: Ckip
             tmp_r += 1
     return [tmp_n/tmp_token, tmp_v/tmp_token, tmp_a/tmp_token, tmp_r/tmp_token, len(word_type)/tmp_token]
 
-def semantic_analysis(sentence, w2v_model, zh_type='s'):
+def semantic_analysis(sentence, w2v_model):
 
 	vector = np.zeros((WV_DIIM))
 	oov_num = 0
-	# w2v_model = load_wordvec_model(WORDVEC_MODEL+'700features_20context_20mincount_zht')
-	if zh_type=='s':
-		# openCC = OpenCC('tw2s')
-		# sentence = openCC.convert(sentence)
-		token_sentence = jieba.lcut(sentence)
-		# token_sentence = [t for t in token_sentence if not t in exclude]
-	
-	# elif zh_type=='tw':
-	# 	segmenter = ckip.CkipSegmenter()
-	# 	token_sentence = segmenter.seg(sentence)
-	# 	token_sentence = [t for t in token_sentence.tok if not t in exclude]
+	token_sentence = jieba.lcut(sentence)
 
 	for token in token_sentence:
 		if token in w2v_model.wv.vocab:
