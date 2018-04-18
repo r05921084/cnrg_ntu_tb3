@@ -1,0 +1,3 @@
+<launch>
+  <node ns="binaural_audio" pkg="binaural_microphone" name="sine_sweep" type="sine_sweep.py" output="screen"/>
+</launch>

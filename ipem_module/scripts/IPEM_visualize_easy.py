@@ -44,12 +44,32 @@ def visualizer():
     def ani_cb(data):
         points_L = [Point(0.01 * i - data.chunk_size * 0.005, 0.1 * j + 0.5, data.left_channel[i * 40 + j] * 10) for j in range(data.n_subchannels) for i in range(0, data.chunk_size, 10)]
         points_R = [Point(0.01 * i - data.chunk_size * 0.005, 0.1 * j - 0.5 - data.n_subchannels * 0.1, data.right_channel[i * 40 + j] * 10) for j in range(data.n_subchannels) for i in range(0, data.chunk_size, 10)]
-        colors_L = [ColorRGBA(*hsva_to_rgba(0.67 - 0.67 * (float(j) / data.n_subchannels), 1.0, np.clip(data.left_channel[i * 40 + j] * 10, 0., 1.))) for j in range(data.n_subchannels) for i in range(0, data.chunk_size, 10)]
-        colors_R = [ColorRGBA(*hsva_to_rgba(0.67 - 0.67 * (float(j) / data.n_subchannels), 1.0, np.clip(data.right_channel[i * 40 + j] * 10, 0., 1.))) for j in range(data.n_subchannels) for i in range(0, data.chunk_size, 10)]
+        colors_L = [ColorRGBA(*hsva_to_rgba(0.67 - 0.67 * j / data.n_subchannels, 1.0, np.clip(data.left_channel[i * 40 + j] * 5, 0., 1.))) for j in range(data.n_subchannels) for i in range(0, data.chunk_size, 10)]
+        colors_R = [ColorRGBA(*hsva_to_rgba(0.67 - 0.67 * j / data.n_subchannels, 1.0, np.clip(data.right_channel[i * 40 + j] * 5, 0., 1.))) for j in range(data.n_subchannels) for i in range(0, data.chunk_size, 10)]
+        # points_L = points_R = []
+        # colors_L = colors_R = []
+        # for i in range(0, data.chunk_size, 10):
+        #     for j in range(data.n_subchannels):
+        #         points_L.append(
+        #             Point(
+        #                 0.01 * i - data.chunk_size * 0.005,
+        #                 0.1 * j + 0.5,
+        #                 data.left_channel[i * 40 + j] * 10
+        #             )
+        #         )
+        #         colors_L.append(
+        #             ColorRGBA(
+        #                 *hsva_to_rgba(0.67 - 0.67 * j / data.n_subchannels,
+        #                     1.0,
+        #                     np.clip(data.left_channel[i * 40 + j] * 5, 0., 1.)
+        #                 )
+        #             )
+        #         )
+        
         marker = Marker(
             header=Header(frame_id='/map'),
             ns=NODE_NAME,
-            id=0,
+            id=1,
             type=Marker.POINTS,
             action=Marker.ADD,
             pose=Pose(Point(0.0, 0.0, 0.0), Quaternion(0, 0, 0, 1)),
@@ -63,21 +83,22 @@ def visualizer():
         marker_publisher.publish(marker)
     
     rospy.Subscriber(SUB_TOPIC_NAME, AuditoryNerveImage, ani_cb)
-    print 'Subscribed'
+    # print 'Subscribed'
 
 
     r = rospy.Rate(1.)
 
     while not rospy.is_shutdown():        
         marker = Marker(
-                type=Marker.TEXT_VIEW_FACING,
-                id=0,
-                lifetime=rospy.Duration(0.5),
-                pose=Pose(Point(0.5, 0.5, 1.45), Quaternion(0, 0, 0, 1)),
-                scale=Vector3(0.1, 0.1, 0.1),
                 header=Header(frame_id='/map'),
+                ns=NODE_NAME,
+                id=0,
+                type=Marker.TEXT_VIEW_FACING,                
+                lifetime=rospy.Duration(0.5),
+                pose=Pose(Point(0., 0., 1.), Quaternion(0, 0, 0, 1)),
+                scale=Vector3(0.1, 0.1, 0.1),                
                 color=ColorRGBA(1.0, 0.0, 0.0, 1.0),
-                text='Hello world!')
+                text=NODE_NAME)
         marker_publisher.publish(marker)
         r.sleep()
 

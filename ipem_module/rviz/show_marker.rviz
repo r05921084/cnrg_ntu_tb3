@@ -53,8 +53,7 @@ Visualization Manager:
       Marker Topic: /visualization_marker
       Name: Marker
       Namespaces:
-        "": true
-        ipem_visualizer: true
+        ipem_visualize_split: true
       Queue Size: 100
       Value: true
   Enabled: true
@@ -82,7 +81,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 21.6707516
+      Distance: 33.6083221
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
