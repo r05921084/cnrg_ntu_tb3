@@ -7,8 +7,9 @@
   <!-- Args for driver -->
   <arg name="launch_r200" default="true"/>
   <arg name="launch_keyboard_io" default="true"/>
+  <arg name="launch_app_server" default="true"/>
   <arg name="launch_logitech" default="false"/>
-  <arg name="launch_microphone" default="true"/>
+  <arg name="launch_auditory" default="true"/>
   
   <!-- <arg name="nodelet_manager" default="/realsense/camera/camera_nodelet_manager"/ -->
 
@@ -21,8 +22,9 @@
   <include file="$(find tb3_demo)/launch/cnrg_tb3_drivers.launch.xml">
     <arg name="launch_r200" value="$(arg launch_r200)"/>
     <arg name="launch_keyboard_io" value="$(arg launch_keyboard_io)"/>
+    <arg name="launch_app_server" value="$(arg launch_app_server)"/>
     <arg name="launch_logitech" value="$(arg launch_logitech)"/>
-    <arg name="launch_microphone" value="$(arg launch_microphone)"/>
+    <arg name="launch_auditory" value="$(arg launch_auditory)"/>
   </include>
   
   <!-- Modules
