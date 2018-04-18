@@ -11,8 +11,9 @@ import rospkg
 rospack = rospkg.RosPack()
 path = rospack.get_path('keyboard_io')
 
-w2v_model = syntactic_extract.load_wordvec_model(path+'/src/100features_20context_20mincount_zht')
+w2v_model = syntactic_extract.load_wordvec_model(path+'/wordvec_model/100features_20context_20mincount_zht')
 print('load model success')
+
 def call_back(data):
 	rospy.loginfo(rospy.get_caller_id() + 'I heard:\n%s', data.data)
 	sentence_list.append(data.data)
@@ -20,13 +21,16 @@ def call_back(data):
 	if data.data=='analysis':
 		sentence_list.pop()
 		for s in sentence_list:
-			print(syntactic_extract.pos_tag_analysis(s, 'jieba'))
-			print(syntactic_extract.semantic_analysis(s, w2v_model))
+			if s[0].isalpha():
+				pass
+			else:
+				print(syntactic_extract.pos_tag_analysis(s))
+				print(syntactic_extract.semantic_analysis(s, w2v_model))
 
-def listener():
-	rospy.init_node('listener', anonymous=True)
+def text_analysis():
+	rospy.init_node('text_analysis', anonymous=True)
 	rospy.Subscriber('chatter', String, call_back)
 	rospy.spin()
 
 if __name__ == '__main__':
-	listener()
+	text_analysis()
