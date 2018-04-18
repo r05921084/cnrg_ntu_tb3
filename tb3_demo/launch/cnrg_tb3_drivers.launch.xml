@@ -3,6 +3,7 @@
   <arg name="launch_r200" default="false"/>
   <arg name="launch_keyboard_io" default="false"/>
   <arg name="launch_logitech" default="false"/>
+  <arg name="launch_microphone" default="false"/>
 
   <arg name="camera" default="camera" />
   
@@ -14,10 +15,11 @@
   </group>
 
   <!-- Binaural microphone -->
-  <include file="$(find binaural_microphone)/launch/basic.launch" />
+  <include file="$(find binaural_microphone)/launch/basic.launch" if="$(arg launch_microphone)"/>
+  <include file="$(find ipem_module)/launch/basic.launch" if="$(arg launch_microphone)"/>
 
   <!-- Keyboard IO -->
-  <include file="$(find keyboard_io)/launch/text_analysis.launch" if="$(arg launch_keyboard_io)"/>
+  <include file="$(find keyboard_io)/launch/keyboard_io.launch" if="$(arg launch_keyboard_io)"/>
 
   <!-- Logitech camera -->
   <group ns="logitech" clear_params="true">
