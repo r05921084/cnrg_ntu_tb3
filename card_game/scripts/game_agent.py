@@ -11,12 +11,12 @@ import numpy as np
 from gtts import gTTS
 from pygame import mixer
 import tempfile
-from threading import Event
+import threading
 import rospy
 from std_msgs.msg import String
 
 
-event = Event()
+event = threading.Event()
 
 def callback(data):
     global msg
@@ -63,7 +63,7 @@ class MyWebSocket(websocket.WebSocketHandler):
 
     def open(self):
         print ' connected.'
-        agent(self)
+        create_agent(self)
 
     def on_close(self):
         print ' disconnected.'
@@ -71,6 +71,10 @@ class MyWebSocket(websocket.WebSocketHandler):
     def on_message(self, message):
         print message
 
+
+def create_agent(ws):
+    t = threading.Thread(target=agent, args=(ws,))
+    t.start()
 
 
 def speak(sentence):
@@ -90,8 +94,9 @@ def get_feedback():
     event.wait()
     event.clear()
     if msg == 'q':
-        exit()
-    feedback = msg.decode('utf8')
+        rospy.signal_shutdown()
+    else:
+        feedback = msg.decode('utf8')
 
     return feedback
 
@@ -114,11 +119,6 @@ def agent(websocket):
             msg = command+','+','.join(n)
 
         websocket.write_message(msg)
-        # print 1
-        # while event.wait():
-        #     event.clear()
-        #     websocket.write_message(msg)
-        # print 2
 
 
     # Set level (card number)
@@ -127,7 +127,7 @@ def agent(websocket):
     response_time = np.zeros(card_num)
     # Loading image
     select_card = random.sample(cards_all, card_num)
-    # print(select_card)
+    # print select_card
     send_command('load', select_card)
 
 
@@ -136,7 +136,7 @@ def agent(websocket):
         send_command('talk', s)
         speak(s)
         feedback = get_feedback()
-        print('people: '+feedback)
+        # print 'people: '+feedback
 
 
     # Playing
@@ -167,11 +167,12 @@ def agent(websocket):
 
 
     ## Test?
-    def check_answer(s):
-        if s in card_property[select_card[i][:-4]]:
-            return True
-        else:
-            return False
+    def check_answer(s, key_):
+        for p in card_property[key_]:
+            if s.find(p)>=0:
+                return True
+        return False
+
 
 
     for i in range(card_num):
@@ -183,11 +184,12 @@ def agent(websocket):
         while True:
             feedback = get_feedback()
 
-            if check_answer(feedback):
+            if check_answer(feedback, select_card[i][:-4]):
                 send_command('talk,答對了!')
                 speak("答對了")
                 time.sleep(1)
-                send_command('turn,{}'.format(i))
+                # send_command('turn,{}'.format(i))
+                send_command('turn,%d'%i)
                 break
 
             else:
@@ -203,7 +205,8 @@ def agent(websocket):
         response_time[i] = time.time() - t
 
     total_time = np.sum(response_time)
-    send_command('talk,共花了{}秒'.format(int(total_time)))
+    send_command('talk,共花了%d秒'%total_time)
+    # send_command('talk,共花了{}秒'.format(int(total_time)))
     
 
 
