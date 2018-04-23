@@ -24,14 +24,17 @@ def launch_app(key, pkg=None, launch_file=None):
         except KeyError:
             rospy.logwarn('not supported app: %s' % key)
             return
+
     path = rospack.get_path(pkg)
     launch = roslaunch.parent.ROSLaunchParent(uuid, [path + launch_file])
     try:
-        launch.start()
-        launched_app[key] = launch
-        rospy.loginfo('launch_app: [%s] %s, %s' % (key, pkg, path + launch_file))
+        launch.start()        
     except roslaunch.RLException as e:
         rospy.logwarn(e)
+    else:
+        launched_app[key] = launch
+        rospy.loginfo('launch_app: [%s] %s, %s' % (key, pkg, path + launch_file))
+            
 
 
 def close_app(key):
@@ -43,19 +46,18 @@ def close_app(key):
         pass
 
 
-def new_cmd_callback(data):
-    
+def new_cmd_callback(data):    
     cmd = [key for key in supported_cmd if key in data.data]
     op = [op for op in supported_op if op in data.data]
-
     if len(cmd) and len(op):        
         cmd_queue.append((cmd[0], op[0]))
         new_event.set()
 
 
-def close_all_launch():
+def close_all_app():
     for key in launched_app:
         close_app(key)
+    rospy.loginfo('close_all_app')
 
 
 def run_app_server():
@@ -66,28 +68,25 @@ def run_app_server():
     new_event = threading.Event()
 
     rospy.init_node('tb3_app_server', anonymous=False)
+    rospy.on_shutdown(close_all_app)
     rospack = rospkg.RosPack()
     
     uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
     roslaunch.configure_logging(uuid)
 
     rospy.Subscriber('chatter', String, new_cmd_callback)
-    
-    rospy.on_shutdown(close_all_launch)
 
     while not rospy.is_shutdown():
         while new_event.wait(0.5):
             cmd, op = cmd_queue.popleft()
             new_event.clear()
 
-            print cmd, op
-
             if op == 'run':
                 launch_app(cmd)
             elif op == 'end':
                 close_app(cmd)
 
-            print launched_app
+            rospy.logdebug(launched_app)
 
 
 if __name__ == '__main__':
