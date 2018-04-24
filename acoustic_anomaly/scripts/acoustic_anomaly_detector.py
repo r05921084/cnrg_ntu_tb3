@@ -22,9 +22,9 @@ def model():
         pass
     frames = []
     ### Anomaly detection model here!!
-    print 'start model'
-    time.sleep(0.15)
-    print 'end model'
+    rospy.loginfo('start model')
+    time.sleep(0.1)
+    rospy.loginfo('end model')
     return 'normal'
     ### 
 
