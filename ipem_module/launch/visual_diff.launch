@@ -1,3 +1,7 @@
 <launch>
+  <arg name="rviz" default="false"/>
   <node ns="ipem_module" name="IPEM_visualize_difference" pkg="ipem_module" type="IPEM_visualize_difference.py"/>
+
+  <!-- RViz -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find ipem_module)/rviz/show_marker.rviz" if="$(arg rviz)"/>
 </launch>
