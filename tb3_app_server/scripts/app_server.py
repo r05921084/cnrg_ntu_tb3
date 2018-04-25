@@ -13,6 +13,7 @@ supported_cmd = {}
 supported_cmd['card_game'] = ('card_game', '/launch/card_game.launch')
 supported_cmd['text_analysis'] = ('keyboard_io', '/launch/text_analysis.launch')
 supported_cmd['ipem_visual_split'] = ('ipem_module', '/launch/visual_split.launch')
+supported_cmd['acoustic_anomaly'] = ('acoustic_anomaly', '/launch/publish_acoustic_anomaly.launch')
 
 supported_op = ['run', 'end']
 
