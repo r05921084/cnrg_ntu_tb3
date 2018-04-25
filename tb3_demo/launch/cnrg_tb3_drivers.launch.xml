@@ -2,28 +2,27 @@
 
   <arg name="launch_r200" default="false"/>
   <arg name="launch_keyboard_io" default="false"/>
-  <arg name="launch_app_server" default="true"/>
   <arg name="launch_logitech" default="false"/>
-  <arg name="launch_auditory" default="false"/>
-
-  <arg name="camera" default="camera" />
+  <arg name="launch_microphone" default="false"/>
+  <arg name="launch_lidar" default="true"/>
+  <arg name="launch_tb3_core" default="true"/>
   
-  <!-- Realsense r200 camera -->
-  <group ns="realsense" clear_params="true">
-    <include file="$(find realsense_rgbd_camera)/launch/r200_camera_driver.launch" if="$(arg launch_r200)">
-      <arg name="camera" value="$(arg camera)"/>  
-    </include>
-  </group>
+  <arg name="camera" default="camera" />
 
   <!-- Binaural microphone -->
-  <include file="$(find binaural_microphone)/launch/basic.launch" if="$(arg launch_auditory)"/>
-  <include file="$(find ipem_module)/launch/basic.launch" if="$(arg launch_auditory)"/>
+  <include file="$(find binaural_microphone)/launch/basic.launch" if="$(arg launch_microphone)"/>
 
+  <!-- Lidar -->
+  <include file="$(find turtlebot3_bringup)/launch/turtlebot3_lidar.launch" if="$(arg launch_lidar)"/>
+
+  <!-- Turtlebot3 core -->
+  <include file="$(find turtlebot3_bringup)/launch/turtlebot3_core.launch" if="$(arg launch_tb3_core)"/>
+
+  <!-- TB3 diagnostics -->
+  <node pkg="turtlebot3_bringup" type="turtlebot3_diagnostics" name="turtlebot3_diagnostics" output="screen" if="$(arg launch_tb3_core)"/>
+ 
   <!-- Keyboard IO -->
   <include file="$(find keyboard_io)/launch/keyboard_io.launch" if="$(arg launch_keyboard_io)"/>
-
-  <!-- App_server -->
-  <include file="$(find tb3_app_server)/launch/basic.launch" if="$(arg launch_app_server)"/>
 
   <!-- Logitech camera -->
   <group ns="logitech" clear_params="true">
@@ -35,6 +34,13 @@
       <param name="camera_frame_id" value="usb_cam" />
       <param name="io_method" value="mmap"/>
     </node>
+  </group>
+
+  <!-- Realsense r200 camera -->
+  <group ns="realsense" clear_params="true">
+    <include file="$(find realsense_rgbd_camera)/launch/r200_camera_driver.launch" if="$(arg launch_r200)">
+      <arg name="camera" value="$(arg camera)"/>  
+    </include>
   </group>
 
 </launch>
