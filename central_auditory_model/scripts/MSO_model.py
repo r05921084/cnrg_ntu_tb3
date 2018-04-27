@@ -18,17 +18,13 @@ SUB_TOPIC_NAME = '/ipem_module/apm_stream'
 SAMPLE_RATE = 11025
 CHUNK_SIZE = 1024
 N_SUBCHANNELS = 40
-
-def aid(x):
-    # This function returns the memory
-    # block address of an array.
-    return x.__array_interface__['data'][0]
+MAX_DELAY = 10.
 
 
 def run_MSO_model():
 
-    dl_L = DelayLine((N_SUBCHANNELS,), SAMPLE_RATE, initial_value=0.05)
-    dl_R = DelayLine((N_SUBCHANNELS,), SAMPLE_RATE, initial_value=0.05)
+    dl_L = DelayLine((N_SUBCHANNELS,), SAMPLE_RATE, initial_value=0.05, max_delay=MAX_DELAY)
+    dl_R = DelayLine((N_SUBCHANNELS,), SAMPLE_RATE, initial_value=0.05, max_delay=MAX_DELAY)
 
     mso_pub = rospy.Publisher(PUB_TOPIC_NAME, AuditoryNerveImage, queue_size=1)
 
@@ -59,11 +55,9 @@ def run_MSO_model():
         dl_L.update(ani_L[reshape_index])
         dl_R.update(ani_R[reshape_index])
         event.set()
-
         # print time.time() - t1
 
     def build_model():
-
         synapse1 = None
         synapse2 = 0
         synapse3 = 0
@@ -76,130 +70,56 @@ def run_MSO_model():
         max_r = nengo.dists.Uniform(1000, 2000)
 
         delay_values = [0., 9.e-5, 26e-5, 41e-5, 56e-5, 73e-5, 82e-5]
+        # delay_values = [0., 9.e-5, 26e-5]
 
-        def MSO_ensemble_array(radius):
-            return nengo.networks.EnsembleArray(n_neurons=32, n_ensembles=N_SUBCHANNELS, ens_dimensions=1,
+        def MSO_ensemble_array(radius, label='ens_arr'):
+            return nengo.networks.EnsembleArray(n_neurons=32, n_ensembles=N_SUBCHANNELS, ens_dimensions=1, label=label,
                                                 radius=radius, neuron_type=lifrate_model, max_rates=max_r, seed=None)
 
-        with nengo.Network(label="MSO_Jeffress_Model_Multi_Channel") as network:
-            # for i in range(len(delay_values)):
-                
-            input_node_L = nengo.Node(dl_L.delayed_view(0.))
-            delay_node_L_A = nengo.Node(dl_L.delayed_view(9.e-5))
-            delay_node_L_B = nengo.Node(dl_L.delayed_view(26e-5))
-            delay_node_L_C = nengo.Node(dl_L.delayed_view(41e-5))
-            delay_node_L_D = nengo.Node(dl_L.delayed_view(56e-5))
-            delay_node_L_E = nengo.Node(dl_L.delayed_view(73e-5))
-            delay_node_L_F = nengo.Node(dl_L.delayed_view(82e-5))
+        model = nengo.Network(label="MSO_Jeffress_Model_Multi_Channel")
+        with model:
+            input_node_L = []
+            input_node_R = []
+            ens_arr_L = []
+            ens_arr_R = []
+            ens_arr_add = []
 
-            input_node_R = nengo.Node(dl_R.delayed_view(0.))
-            delay_node_R_A = nengo.Node(dl_R.delayed_view(9.e-5))
-            delay_node_R_B = nengo.Node(dl_R.delayed_view(26e-5))
-            delay_node_R_C = nengo.Node(dl_R.delayed_view(41e-5))
-            delay_node_R_D = nengo.Node(dl_R.delayed_view(56e-5))
-            delay_node_R_E = nengo.Node(dl_R.delayed_view(73e-5))
-            delay_node_R_F = nengo.Node(dl_R.delayed_view(82e-5))
+            input_node_L_probe = []
+            input_node_R_probe = []
+            ens_arr_add_probe = []
 
-            # creating Ensembles
-            ens_arr_L_1 = MSO_ensemble_array(radius_1)
-            ens_arr_L_2 = MSO_ensemble_array(radius_1)
-            ens_arr_L_3 = MSO_ensemble_array(radius_1)
-            ens_arr_L_4 = MSO_ensemble_array(radius_1)
-            ens_arr_L_5 = MSO_ensemble_array(radius_1)
-            ens_arr_L_6 = MSO_ensemble_array(radius_1)
-            ens_arr_L_7 = MSO_ensemble_array(radius_1)
+            for i in range(len(delay_values)):
+                input_node_L.append(nengo.Node(dl_L.delayed_view(delay_values[i]), label='input_node_L[%d]' % i))
+                input_node_R.append(nengo.Node(dl_R.delayed_view(delay_values[i]), label='input_node_R[%d]' % i))
+                ens_arr_L.append(MSO_ensemble_array(radius_1, label='ens_arr_L[%d]' % i))
+                ens_arr_R.append(MSO_ensemble_array(radius_1, label='ens_arr_R[%d]' % i))
+                ens_arr_add.append(MSO_ensemble_array(radius_2, label='ens_arr_add[%d]' % i))
 
-            ens_arr_R_1 = MSO_ensemble_array(radius_1)
-            ens_arr_R_2 = MSO_ensemble_array(radius_1)
-            ens_arr_R_3 = MSO_ensemble_array(radius_1)
-            ens_arr_R_4 = MSO_ensemble_array(radius_1)
-            ens_arr_R_5 = MSO_ensemble_array(radius_1)
-            ens_arr_R_6 = MSO_ensemble_array(radius_1)
-            ens_arr_R_7 = MSO_ensemble_array(radius_1)
+            for i in range(len(delay_values)):
+                nengo.Connection(input_node_L[i],   ens_arr_L[i].input, synapse=synapse2)
+                nengo.Connection(input_node_R[i],   ens_arr_R[i].input, synapse=synapse2)
+                nengo.Connection(ens_arr_L[i].output, ens_arr_add[i].input, synapse=synapse3)
+                nengo.Connection(ens_arr_R[-1-i].output, ens_arr_add[i].input, synapse=synapse3)
 
-            ens_arr_add_1 = MSO_ensemble_array(radius_2)
-            ens_arr_add_2 = MSO_ensemble_array(radius_2)
-            ens_arr_add_3 = MSO_ensemble_array(radius_2)
-            ens_arr_add_4 = MSO_ensemble_array(radius_2)
-            ens_arr_add_5 = MSO_ensemble_array(radius_2)
-            ens_arr_add_6 = MSO_ensemble_array(radius_2)
-            ens_arr_add_7 = MSO_ensemble_array(radius_2)
 
-            # connecting Nodes to Ensembles
-            nengo.Connection(input_node_L,   ens_arr_L_1.input, synapse=synapse2)
-            nengo.Connection(delay_node_L_A, ens_arr_L_2.input, synapse=synapse2)
-            nengo.Connection(delay_node_L_B, ens_arr_L_3.input, synapse=synapse2)
-            nengo.Connection(delay_node_L_C, ens_arr_L_4.input, synapse=synapse2)
-            nengo.Connection(delay_node_L_D, ens_arr_L_5.input, synapse=synapse2)
-            nengo.Connection(delay_node_L_E, ens_arr_L_6.input, synapse=synapse2)
-            nengo.Connection(delay_node_L_F, ens_arr_L_7.input, synapse=synapse2)
+            for i in range(len(delay_values)):
+                input_node_L_probe.append(nengo.Probe(input_node_L[i]))
+                input_node_R_probe.append(nengo.Probe(input_node_R[i]))
+                ens_arr_add_probe.append(nengo.Probe(ens_arr_add[i].output, synapse=synapse4))
 
-            nengo.Connection(delay_node_R_F, ens_arr_R_7.input, synapse=synapse2)
-            nengo.Connection(delay_node_R_E, ens_arr_R_6.input, synapse=synapse2)
-            nengo.Connection(delay_node_R_D, ens_arr_R_5.input, synapse=synapse2)
-            nengo.Connection(delay_node_R_C, ens_arr_R_4.input, synapse=synapse2)
-            nengo.Connection(delay_node_R_B, ens_arr_R_3.input, synapse=synapse2)
-            nengo.Connection(delay_node_R_A, ens_arr_R_2.input, synapse=synapse2)
-            nengo.Connection(input_node_R,   ens_arr_R_1.input, synapse=synapse2)
+        dt = 1. / SAMPLE_RATE
 
-            nengo.Connection(ens_arr_L_1.output, ens_arr_add_1.input, synapse=synapse3)
-            nengo.Connection(ens_arr_L_2.output, ens_arr_add_2.input, synapse=synapse3)
-            nengo.Connection(ens_arr_L_3.output, ens_arr_add_3.input, synapse=synapse3)
-            nengo.Connection(ens_arr_L_4.output, ens_arr_add_4.input, synapse=synapse3)
-            nengo.Connection(ens_arr_L_5.output, ens_arr_add_5.input, synapse=synapse3)
-            nengo.Connection(ens_arr_L_6.output, ens_arr_add_6.input, synapse=synapse3)
-            nengo.Connection(ens_arr_L_7.output, ens_arr_add_7.input, synapse=synapse3)
+        # sim = nengo.Simulator(model, dt=dt)
 
-            nengo.Connection(ens_arr_R_7.output, ens_arr_add_1.input, synapse=synapse3)
-            nengo.Connection(ens_arr_R_6.output, ens_arr_add_2.input, synapse=synapse3)
-            nengo.Connection(ens_arr_R_5.output, ens_arr_add_3.input, synapse=synapse3)
-            nengo.Connection(ens_arr_R_4.output, ens_arr_add_4.input, synapse=synapse3)
-            nengo.Connection(ens_arr_R_3.output, ens_arr_add_5.input, synapse=synapse3)
-            nengo.Connection(ens_arr_R_2.output, ens_arr_add_6.input, synapse=synapse3)
-            nengo.Connection(ens_arr_R_1.output, ens_arr_add_7.input, synapse=synapse3)
+        import nengo_dl
+        sim = nengo_dl.Simulator(model, dt=dt, unroll_simulation=128)
 
-            # Add Probes
-            global input_node_L_probe, delay_node_L_A_probe, delay_node_L_B_probe, delay_node_L_C_probe,\
-            delay_node_L_D_probe, delay_node_L_E_probe, delay_node_L_F_probe
-            global input_node_R_probe, delay_node_R_A_probe, delay_node_R_B_probe, delay_node_R_C_probe,\
-            delay_node_R_D_probe, delay_node_R_E_probe, delay_node_R_F_probe
-            global ens_arr_add_1_probe, ens_arr_add_2_probe, ens_arr_add_3_probe, ens_arr_add_4_probe,\
-            ens_arr_add_5_probe, ens_arr_add_6_probe, ens_arr_add_7_probe
+        # import os; os.environ['PYOPENCL_CTX'] = '0'
+        # import pyopencl, nengo_ocl
+        # ctx = pyopencl.create_some_context()
+        # sim = nengo_ocl.Simulator(model, context=ctx, dt=dt, n_prealloc_probes=1024)
 
-            input_node_L_probe = nengo.Probe(input_node_L)
-            delay_node_L_A_probe = nengo.Probe(delay_node_L_A)
-            delay_node_L_B_probe = nengo.Probe(delay_node_L_B)
-            delay_node_L_C_probe = nengo.Probe(delay_node_L_C)
-            delay_node_L_D_probe = nengo.Probe(delay_node_L_D)
-            delay_node_L_E_probe = nengo.Probe(delay_node_L_E)
-            delay_node_L_F_probe = nengo.Probe(delay_node_L_F)
-
-            input_node_R_probe = nengo.Probe(input_node_R)
-            delay_node_R_A_probe = nengo.Probe(delay_node_R_A)
-            delay_node_R_B_probe = nengo.Probe(delay_node_R_B)
-            delay_node_R_C_probe = nengo.Probe(delay_node_R_C)
-            delay_node_R_D_probe = nengo.Probe(delay_node_R_D)
-            delay_node_R_E_probe = nengo.Probe(delay_node_R_E)
-            delay_node_R_F_probe = nengo.Probe(delay_node_R_F)
-
-            ens_arr_add_1_probe = nengo.Probe(ens_arr_add_1.output, synapse=synapse4)
-            ens_arr_add_2_probe = nengo.Probe(ens_arr_add_2.output, synapse=synapse4)
-            ens_arr_add_3_probe = nengo.Probe(ens_arr_add_3.output, synapse=synapse4)
-            ens_arr_add_4_probe = nengo.Probe(ens_arr_add_4.output, synapse=synapse4)
-            ens_arr_add_5_probe = nengo.Probe(ens_arr_add_5.output, synapse=synapse4)
-            ens_arr_add_6_probe = nengo.Probe(ens_arr_add_6.output, synapse=synapse4)
-            ens_arr_add_7_probe = nengo.Probe(ens_arr_add_7.output, synapse=synapse4)
-            
-            # import nengo_dl
-            # return nengo_dl.Simulator(network, dt=1. / SAMPLE_RATE, unroll_simulation=64)
-            import pyopencl
-            import nengo_ocl
-            import os
-            os.environ[ 'PYOPENCL_CTX' ] = '0'
-            ctx = pyopencl.create_some_context()
-            sim = nengo_ocl.Simulator(network, context=ctx, dt=float(1. / SAMPLE_RATE), n_prealloc_probes=1024, if_python_code='warn')
-            return sim
-
+        return sim
 
     sim = build_model()
     print sim.time, sim.n_steps
@@ -207,18 +127,17 @@ def run_MSO_model():
     rospy.Subscriber(SUB_TOPIC_NAME, AuditoryNerveImage, ani_cb)
     rospy.loginfo('"%s" starts subscribing to "%s".' % (NODE_NAME, SUB_TOPIC_NAME))
 
-    # rospy.spin()
-
     while not rospy.is_shutdown():
         while event.wait(0.3):
             event.clear()
-            steps_to_run = dl_L.current_step - sim.n_steps
+            steps_to_run = CHUNK_SIZE
             t2 = time.time()
             sim.run_steps(steps_to_run)
-            print 'mainloop %dsteps: ' % steps_to_run, time.time() - t2
-            steps_to_run = dl_L.current_step - sim.n_steps
-            print 'next  %dsteps: ' % steps_to_run
-            break
+            print 'ran %d steps in %5.3f sec' % (steps_to_run, time.time() - t2)
+            yet_to_run = dl_L.current_step - sim.n_steps
+            print 'yet_to_run: %d steps' % yet_to_run
+            if yet_to_run > MAX_DELAY * SAMPLE_RATE:
+                break
         break
 
 

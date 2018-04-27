@@ -80,7 +80,7 @@ def reactor():
                     chunk_size=CHUNK_SIZE,
                     n_subchannels=N_SUBCHANNELS,
                     left_channel=ipem_L_results,
-                    right_channel=ipem_R_results.flatten()
+                    right_channel=ipem_R_results
                 )
                 ipem_L_ready.clear()
                 ipem_R_ready.clear()
