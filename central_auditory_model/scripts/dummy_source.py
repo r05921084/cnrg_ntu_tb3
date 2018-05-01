@@ -17,8 +17,7 @@ if __name__ == '__main__':
 
         rate = rospy.Rate(1.0 * SAMPLE_RATE / CHUNK_SIZE)
 
-        while not rospy.is_shutdown():
-            ani = AuditoryNerveImage(
+        ani = AuditoryNerveImage(
                 header=Header(
                     stamp=rospy.Time.now()
                 ),
@@ -28,6 +27,19 @@ if __name__ == '__main__':
                 left_channel=np.ones([CHUNK_SIZE * N_SUBCHANNELS]),
                 right_channel=np.ones([CHUNK_SIZE * N_SUBCHANNELS]),
             )
+
+        while not rospy.is_shutdown():
+            # ani = AuditoryNerveImage(
+            #     header=Header(
+            #         stamp=rospy.Time.now()
+            #     ),
+            #     sample_rate=SAMPLE_RATE,
+            #     chunk_size=CHUNK_SIZE,
+            #     n_subchannels=N_SUBCHANNELS,
+            #     left_channel=np.ones([CHUNK_SIZE * N_SUBCHANNELS]),
+            #     right_channel=np.ones([CHUNK_SIZE * N_SUBCHANNELS]),
+            # )
+            ani.header = Header(stamp=rospy.Time.now())
             ani_pub.publish(ani)
             print ani.header.stamp
 
