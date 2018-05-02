@@ -121,7 +121,7 @@ def run_MSO_model():
         # sim = nengo.Simulator(model, dt=dt)
 
         import nengo_dl
-        sim = nengo_dl.Simulator(model, dt=dt, unroll_simulation=1)
+        sim = nengo_dl.Simulator(model, dt=dt, unroll_simulation=32)
 
         # import os; os.environ['PYOPENCL_CTX'] = '0'
         # import pyopencl, nengo_ocl
@@ -138,7 +138,7 @@ def run_MSO_model():
 
     while not rospy.is_shutdown() and event.wait(1.0):
 
-        yet_to_run = min([dl_L.n_steps, dl_R.n_steps]) - sim.n_steps - CHUNK_SIZE
+        yet_to_run = dl_R.n_steps - sim.n_steps - CHUNK_SIZE
 
         if yet_to_run == 0:                
             event.clear()

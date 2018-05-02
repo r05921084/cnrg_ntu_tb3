@@ -42,10 +42,33 @@ class DelayLine(object):
 
         return view
 
+    def batch_view_chunk(self, start_step, n_steps, delay_steps=[0]):
+        delay_steps = np.array(delay_steps, dtype=np.int)        
+        if not delay_steps.shape:
+            raise ValueError('delay_steps must be an array-like.')
+
+        if np.min(delay_steps) < 0:
+            raise ValueError('delay_steps CAN\'T be negative.')
+
+        steps_behind = self.n_steps - start_step
+        if (steps_behind + np.max(delay_steps)) > self.buf_len:
+            warnings.warn('Buffer already forgot!', Warning)
+        elif steps_behind <= n_steps:
+            warnings.warn('Buffer is not there yet! steps_behind=%d' % steps_behind, Warning)  # think more
+        else:
+            start = self.buf_head - steps_behind
+            stop = start + n_steps
+            # print np.arange(start, stop)[np.newaxis, :]
+            # print delay_steps[:, np.newaxis]
+            wrapped_index = np.arange(start, stop)[np.newaxis, :] - delay_steps[:, np.newaxis]
+            wrapped_index[wrapped_index >= self.buf_len] -= self.buf_len
+            # print wrapped_index
+            return self.buffer[wrapped_index]
+
 
 if __name__ == '__main__':
-    dl = DelayLine((40,), sample_rate=11025, initial_value=0.05)
-    dl.update(np.arange(11025)[:,np.newaxis] * 40 + np.arange(40))
+    dl = DelayLine((10,), sample_rate=1000, initial_value=0.05)
+    dl.update(np.arange(1000)[:,np.newaxis] * 10 + np.arange(10))
     view = dl.delayed_view(0.)
     view(-0.5)
     view(0.)
@@ -53,3 +76,10 @@ if __name__ == '__main__':
     view(0.5)
     view(1.0)
     view(1.5)
+
+    print 'view_chunk'
+    print dl.batch_view_chunk(0, 5, [0])
+    print dl.batch_view_chunk(100, 5, [0, 1])
+    print dl.batch_view_chunk(100, 5, [2])
+
+
