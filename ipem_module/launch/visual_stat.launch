@@ -1,0 +1,7 @@
+<launch>
+  <node ns="ipem_module" name="IPEM_visualize_stat" pkg="ipem_module" type="IPEM_visualize_stat.py" output="screen"/>
+
+  <!-- RViz -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find ipem_module)/rviz/show_marker.rviz" />
+
+</launch>
