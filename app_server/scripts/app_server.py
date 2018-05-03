@@ -69,7 +69,7 @@ def run_app_server():
     cmd_queue = deque()
     new_event = threading.Event()
 
-    rospy.init_node('tb3_app_server', anonymous=False)
+    rospy.init_node('app_server', anonymous=False)
     rospy.on_shutdown(close_all_app)
     rospack = rospkg.RosPack()
     

@@ -1,0 +1,3 @@
+<launch>
+  <node name="app_server" pkg="app_server" type="app_server.py" output="screen" />
+</launch>
