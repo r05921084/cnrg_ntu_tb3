@@ -88,8 +88,7 @@ def run_MSO_model():
             in_R_data = dl_R.batch_view_chunk(n_steps, CHUNK_SIZE, delay_steps=DELAY_STEPS_R)
             print timeit.default_timer() - t2
 
-            if in_L_data is not None and in_R_data is not None:
-
+            if (in_L_data is not None) and (in_R_data is not None):
                 out_data = in_L_data + in_R_data
                 n_steps += CHUNK_SIZE
 
