@@ -1,3 +1,0 @@
-<launch>
-  <node name="tb3_app_server" pkg="tb3_app_server" type="app_server.py" output="screen" />
-</launch>
