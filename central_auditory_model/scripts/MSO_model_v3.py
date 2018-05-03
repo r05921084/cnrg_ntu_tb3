@@ -35,31 +35,55 @@ synapse3 = 0
 radius_1 = 1
 radius_2 = 2
 
+result = []
+
 
 def build_nengo_model():
     lifrate_model = nengo.LIFRate(tau_rc=0.002, tau_ref=0.0002)
     max_r = nengo.dists.Uniform(1000, 2000)
 
-    def MSO_ensemble_array(dim, radius, label='ens_arr'):
-        return nengo.networks.EnsembleArray(n_neurons=32, n_ensembles=dim, ens_dimensions=1, label=label,
+    def MSO_ensemble_array(dim, radius, label='ens_arr', n_neurons=32):
+        return nengo.networks.EnsembleArray(n_neurons=n_neurons, n_ensembles=dim, ens_dimensions=1, label=label,
                                             radius=radius, neuron_type=lifrate_model, max_rates=max_r, seed=None)
 
+    def raw_ensemble_array(dim, radius, label='ens_arr', n_neurons=32):
+        ens_arr = []
+        for i in range(dim):
+            ens_arr.append(nengo.Ensemble(n_neurons, 1, radius=radius, neuron_type=lifrate_model, max_rates=max_r, label='%s_%d' % (label, i)))
+
+        return ens_arr
+
+    def cb(t, x):
+        # global result
+        # result.append(x)
+        # if len(result) > 10000:
+        #     result = []
+        pass
+
     with nengo.Network(label="MSO_Jeffress_Model_Multi_Channel") as model:
+        
+
         input_node_L = nengo.Node([0]*N_SUBCHANNELS, label='input_node_L')
         input_node_R = nengo.Node([0]*N_SUBCHANNELS, label='input_node_R')
 
-        ens_arr_L = MSO_ensemble_array(N_SUBCHANNELS, radius_1, 'ens_arr_L')
-        ens_arr_R = MSO_ensemble_array(N_SUBCHANNELS, radius_1, 'ens_arr_R')
-        ens_arr_add = MSO_ensemble_array(N_SUBCHANNELS, radius_2, 'ens_arr_add')            
+        ens_arr_L = raw_ensemble_array(N_SUBCHANNELS, radius_1, 'ens_arr_L')
+        ens_arr_R = raw_ensemble_array(N_SUBCHANNELS, radius_1, 'ens_arr_R')
+        ens_arr_add = raw_ensemble_array(N_SUBCHANNELS, radius_2, 'ens_arr_add')
 
-        nengo.Connection(input_node_L,   ens_arr_L.input, synapse=synapse1)
-        nengo.Connection(input_node_R,   ens_arr_R.input, synapse=synapse1)
-        nengo.Connection(ens_arr_L.output, ens_arr_add.input, synapse=synapse2)
-        nengo.Connection(ens_arr_R.output, ens_arr_add.input, synapse=synapse2)
+        output_node = nengo.Node(size_in=N_SUBCHANNELS, size_out=N_SUBCHANNELS, label='output_node')
 
-        ens_arr_add_probe = nengo.Probe(ens_arr_add.output, label='ens_arr_add_probe', synapse=synapse3, sample_every=0.01)
+        for i in range(N_SUBCHANNELS):
+            nengo.Connection(input_node_L[i], ens_arr_L[i], synapse=synapse1)
+            nengo.Connection(input_node_R[i], ens_arr_R[i], synapse=synapse1)
+            nengo.Connection(ens_arr_L[i], ens_arr_add[i], synapse=synapse2)
+            nengo.Connection(ens_arr_R[i], ens_arr_add[i], synapse=synapse2)
+            nengo.Connection(ens_arr_add[i], output_node[i], synapse=synapse3)
 
-        simulator = nengo_dl.Simulator(model, dt=(1. / SAMPLE_RATE), unroll_simulation=64, minibatch_size=N_DELAY_VAL)
+        ens_arr_add_probe = nengo.Probe(output_node, label='output_node', synapse=0)  # , sample_every=0.01
+        # ens_arr_add_probe = None
+
+        nengo_dl.configure_settings(session_config={"gpu_options.allow_growth": True})
+        simulator = nengo_dl.Simulator(model, dt=(1. / SAMPLE_RATE), unroll_simulation=32, minibatch_size=N_DELAY_VAL)
 
     return simulator, input_node_L, input_node_R, ens_arr_add_probe   
 
@@ -135,7 +159,7 @@ def run_MSO_model():
 
 if __name__ == '__main__':
     try:
-        rospy.init_node(NODE_NAME, anonymous=False)
+        rospy.init_node(NODE_NAME, anonymous=True)
         run_MSO_model()
     except rospy.ROSInterruptException as e:
         rospy.logerr(e)

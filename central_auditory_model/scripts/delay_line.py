@@ -32,7 +32,7 @@ class DelayLine(object):
             if steps_behind > self.buf_len:
                 warnings.warn('Buffer already forgot!', Warning)
                 return self.buffer[self.buf_head]
-            elif steps_behind <= 0:
+            elif steps_behind < 1:
                 warnings.warn('Buffer is not there yet!', Warning)
                 return self.buffer[self.buf_head - 1]
             else:
@@ -51,35 +51,44 @@ class DelayLine(object):
             raise ValueError('delay_steps CAN\'T be negative.')
 
         steps_behind = self.n_steps - start_step
+
         if (steps_behind + np.max(delay_steps)) > self.buf_len:
-            warnings.warn('Buffer already forgot!', Warning)
-        elif steps_behind <= n_steps:
-            warnings.warn('Buffer is not there yet! steps_behind=%d' % steps_behind, Warning)  # think more
-        else:
-            start = self.buf_head - steps_behind
-            stop = start + n_steps
-            # print np.arange(start, stop)[np.newaxis, :]
-            # print delay_steps[:, np.newaxis]
-            wrapped_index = np.arange(start, stop)[np.newaxis, :] - delay_steps[:, np.newaxis]
-            wrapped_index[wrapped_index >= self.buf_len] -= self.buf_len
-            # print wrapped_index
-            return self.buffer[wrapped_index]
+            warnings.warn('Buffer already forgot! Abort.', Warning)
+            return
+
+        if steps_behind < n_steps:            
+            if steps_behind > 0:
+                n_steps = steps_behind
+                warnings.warn('Buffer is not there yet! shrink n_steps to %d.' % n_steps, Warning)
+            else:
+                warnings.warn('Buffer is not there yet! Abort.', Warning)
+                return        
+        
+        start = self.buf_head - steps_behind
+        stop = start + n_steps
+        wrapped_index = np.arange(start, stop)[np.newaxis, :] - delay_steps[:, np.newaxis]
+        wrapped_index[wrapped_index >= self.buf_len] -= self.buf_len
+
+        return self.buffer[wrapped_index]
 
 
 if __name__ == '__main__':
-    dl = DelayLine((10,), sample_rate=1000, initial_value=0.05)
-    dl.update(np.arange(1000)[:,np.newaxis] * 10 + np.arange(10))
+    dl = DelayLine((10,), max_delay=1.0, sample_rate=100, initial_value=0.05)
+    dl.update(np.arange(100)[:,np.newaxis] * 10 + np.arange(10))
     view = dl.delayed_view(0.)
-    view(-0.5)
-    view(0.)
-    view(0.1)
-    view(0.5)
-    view(1.0)
-    view(1.5)
+    print 'view(-0.5)', view(-0.5)
+    print 'view(0.)', view(0.)
+    print 'view(0.1)', view(0.1)
+    print 'view(0.5)', view(0.5)
+    print 'view(1.0)', view(1.0)
+    print 'view(1.5)', view(1.5)
 
-    print 'view_chunk'
+    delays = [0, 1, 2]
+    delays_rev = list(reversed(delays))
+
+    print '*' * 40
     print dl.batch_view_chunk(0, 5, [0])
-    print dl.batch_view_chunk(100, 5, [0, 1])
-    print dl.batch_view_chunk(100, 5, [2])
+    print dl.batch_view_chunk(50, 5, delays)
+    print dl.batch_view_chunk(50, 5, delays_rev)
 
 
