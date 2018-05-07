@@ -1,0 +1,6 @@
+<launch>
+
+  <node pkg='chatbot' type='keyboard_io.py' name='keyboard_io' output='screen' launch-prefix='gnome-terminal --command'/> 
+  <!-- output='screen' launch-prefix='gnome-terminal command' -->
+
+</launch>

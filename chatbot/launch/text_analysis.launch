@@ -1,0 +1,5 @@
+<launch>
+
+<node pkg='chatbot' type='text_analysis.py' name='text_analysis' output='screen' launch-prefix='gnome-terminal --command'/>
+
+</launch>

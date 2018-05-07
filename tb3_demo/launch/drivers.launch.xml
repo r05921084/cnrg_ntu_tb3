@@ -22,7 +22,7 @@
   <node pkg="turtlebot3_bringup" type="turtlebot3_diagnostics" name="turtlebot3_diagnostics" output="screen" if="$(arg launch_tb3_core)"/>
  
   <!-- Keyboard IO -->
-  <include file="$(find keyboard_io)/launch/keyboard_io.launch" if="$(arg launch_keyboard_io)"/>
+  <include file="$(find chatbot)/launch/keyboard_io.launch" if="$(arg launch_keyboard_io)"/>
 
   <!-- Logitech camera -->
   <group ns="logitech" clear_params="true">
