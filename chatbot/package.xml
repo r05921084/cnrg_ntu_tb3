@@ -1,13 +1,14 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>keyboard_io</name>
+  <name>chatbot</name>
   <version>0.0.0</version>
-  <description>The keyboardIO package</description>
+  <description>The chatbot package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
   <maintainer email="yyliu@todo.todo">yyliu</maintainer>
+  <maintainer email="edward17829991@gmail.com">Edward Chen, CNRG@NTU</maintainer>
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
@@ -49,6 +50,7 @@
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
+
   <build_depend>roscpp</build_depend>
   <build_depend>rospy</build_depend>
   <build_depend>std_msgs</build_depend>
@@ -58,6 +60,9 @@
   <exec_depend>roscpp</exec_depend>
   <exec_depend>rospy</exec_depend>
   <exec_depend>std_msgs</exec_depend>
+
+  <build_depend>message_generation</build_depend>
+  <exec_depend>message_runtime</exec_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
