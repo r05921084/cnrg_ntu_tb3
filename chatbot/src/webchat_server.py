@@ -1,13 +1,14 @@
-#!/usr/bin/env/ python
-# -*- coding: utf-8 -*-
-import os
+#!/usr/bin/env python
+import os, sys
 from tornado import web, ioloop, websocket
 from tornado.options import define, options
+from chatbot_io import ChatBot_IO
 
-define("ip", default='localhost')
+
+define("ip", default=os.environ['ROS_IP'])
 define("port", default=8888)
 
-# 此物件將記錄並管理所有連線
+
 class ChatManager(object):
     users = []
     @classmethod
@@ -18,30 +19,36 @@ class ChatManager(object):
     def remove_user(cls, websocket):
         cls.users.remove(websocket)
 
-# 輸出聊天室 UI 畫面
+
 class Chat(web.RequestHandler):
     def get(self):
         self.render("chat.html")
 
-# 利用 WebSocketHandler 來與 Client 端互動
+
 class Socket(websocket.WebSocketHandler):
-    def open(self):
-        # 完成連線，將此 WebSocket 儲存
-        print ' [x] connected.'
+    chatbot = None
+    def open(self):        
         ChatManager.add_user(self)
+        print ' %d connected.' % len(ChatManager.users)
+        if Socket.chatbot is None:
+            Socket.chatbot = ChatBot_IO(self.send_to_ws)
+            print ' chatbot initialized.'
 
     def on_close(self):
-        # 連線結束，將此 WebSocket 移除
-        print ' [x] disconnected.'
         ChatManager.remove_user(self)
+        print ' 1 disconnected, %d left.' % len(ChatManager.users)      
 
     def on_message(self, message):
-        # 當有訊息進來時，將此訊息發送給其他 WebSocket
-        print ' [x] send message.'
-        for user in ChatManager.users:
-            user.write_message('You send: '+message)
+        message = message.strip('\n')
+        print ' send_to_ros: "%s"' % message
+        Socket.chatbot.send_to_ros(message)
 
-# 相關設定參數
+    def send_to_ws(self, message):
+        print ' send_to_ws: "%s"' % message
+        for user in ChatManager.users:
+            user.write_message(message)
+
+
 settings = dict(
     debug=True,
     autoreload=True,
@@ -49,6 +56,7 @@ settings = dict(
     static_path=os.path.join(os.path.dirname(__file__), "static"),
     template_path=os.path.join(os.path.dirname(__file__), "templates")
 )
+
 
 class Application(web.Application):
     def __init__(self):
@@ -58,11 +66,16 @@ class Application(web.Application):
         ]
         web.Application.__init__(self, handlers, **settings)
 
+
 def main():
     options.parse_command_line()
     app = Application()
     app.listen(options.port, options.ip)
+    # rospy.on_shutdown(ioloop.IOLoop.current().stop)
+
+    print sys.argv
     ioloop.IOLoop.current().start()
+
 
 if __name__ == "__main__":
     main()

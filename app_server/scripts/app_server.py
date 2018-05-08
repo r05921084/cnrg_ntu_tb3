@@ -13,14 +13,15 @@ import time
 NODE_NAME = 'app_server'
 
 
-supported_cmd = {}
-supported_cmd['card_game'] = ('card_game', '/launch/card_game.launch')
-supported_cmd['text_analysis'] = ('chatbot', '/launch/text_analysis.launch')
-supported_cmd['ipem_visual_split'] = ('ipem_module', '/launch/visual_split.launch')
-supported_cmd['acoustic_anomaly'] = ('acoustic_anomaly', '/launch/publish_acoustic_anomaly.launch')
-supported_cmd['video_falling_detection'] = ('video_falling_detection', '/launch/test_launch.launch')
+supported_kw = {}
+supported_kw['all'] = ('all', None)
+supported_kw['card_game'] = ('card_game', '/launch/card_game.launch')
+supported_kw['text_analysis'] = ('text_analysis', '/launch/text_analysis.launch')
+supported_kw['ipem_visual_split'] = ('ipem_module', '/launch/visual_split.launch')
+supported_kw['acoustic_anomaly'] = ('acoustic_anomaly', '/launch/publish_acoustic_anomaly.launch')
+supported_kw['video_falling_detection'] = ('video_falling_detection', '/launch/test_launch.launch')
 
-supported_op = ['run', 'end']
+supported_op = ['run', 'start', 'end', 'close']
 
 
 def pub_to_chatbot(text, priority=0):
@@ -38,7 +39,7 @@ def pub_to_chatbot(text, priority=0):
 def launch_app(key, pkg=None, launch_file=None):
     if pkg is None or launch_file is None:
         try:
-            (pkg, launch_file) = supported_cmd[key]
+            (pkg, launch_file) = supported_kw[key]
         except KeyError:
             rospy.logwarn('not supported app: %s' % key)
             pub_to_chatbot('not supported app: %s' % key)
@@ -62,17 +63,18 @@ def close_app(key):
     try:
         launched_app[key].shutdown()
         del launched_app[key]
-        rospy.loginfo('close_app [%s]' % key)
-        pub_to_chatbot('successfully closed app: %s' % key)
     except KeyError:
         pass
+    else:
+        rospy.loginfo('close_app [%s]' % key)
+        pub_to_chatbot('successfully closed app: %s' % key)
 
 
 def new_cmd_callback(data):
-    cmd = [key for key in supported_cmd if key in data.text]
+    kw = [key for key in supported_kw if key in data.text]
     op = [op for op in supported_op if op in data.text]
-    if len(cmd) and len(op):        
-        cmd_queue.append((cmd[0], op[0]))
+    if len(kw) and len(op):
+        cmd_queue.append((kw[0], op[0]))
         new_event.set()
 
 
@@ -103,13 +105,16 @@ def run_app_server():
 
     while not rospy.is_shutdown():
         while new_event.wait(0.5):
-            cmd, op = cmd_queue.popleft()
+            kw, op = cmd_queue.popleft()
             new_event.clear()
 
-            if op == 'run':
-                launch_app(cmd)
-            elif op == 'end':
-                close_app(cmd)
+            if op in ['run', 'start']:
+                launch_app(kw)
+            elif op in ['end', 'close']:
+                if kw is 'all':
+                    close_all_app()
+                else:
+                    close_app(kw)
 
             rospy.logdebug(launched_app)
 
