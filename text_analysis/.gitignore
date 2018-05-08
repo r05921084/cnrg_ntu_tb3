@@ -1,0 +1,4 @@
+*.pyc
+wordvec_model/
+100features*
+*.npy
