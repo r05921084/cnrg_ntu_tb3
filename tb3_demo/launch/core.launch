@@ -8,7 +8,7 @@
 
   <!-- Args for driver -->
   <arg name="launch_r200" default="true"/>
-  <arg name="launch_keyboard_io" default="true"/>  
+  <arg name="launch_chatbot" default="true"/>  
   <arg name="launch_logitech" default="false"/>
   <arg name="launch_microphone" default="true"/>
   <arg name="launch_lidar" default="true"/>
@@ -28,7 +28,7 @@
     - TB3 core -->
   <include file="$(find tb3_demo)/launch/drivers.launch.xml">
     <arg name="launch_r200" value="$(arg launch_r200)"/>
-    <arg name="launch_keyboard_io" value="$(arg launch_keyboard_io)"/>
+    <arg name="launch_chatbot" value="$(arg launch_chatbot)"/>
     <arg name="launch_logitech" value="$(arg launch_logitech)"/>
     <arg name="launch_microphone" value="$(arg launch_microphone)"/>
     <arg name="launch_lidar" value="$(arg launch_lidar)"/>

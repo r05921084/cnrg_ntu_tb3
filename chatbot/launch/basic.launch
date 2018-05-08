@@ -1,0 +1,7 @@
+<launch>
+  <arg name="webserver_ip" default="$(optenv ROS_IP localhost)"/>
+
+  <node pkg='chatbot' type='keyboard_io.py' name='keyboard_io' output='screen' launch-prefix='gnome-terminal --command'/>
+  <node pkg='chatbot' type='webchat_server.py' name='webchat_server' args="$(arg webserver_ip)" output='screen' launch-prefix='gnome-terminal --command'/>
+
+</launch>

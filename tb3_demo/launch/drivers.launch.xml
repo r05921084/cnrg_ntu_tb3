@@ -1,7 +1,7 @@
 <launch>
 
   <arg name="launch_r200" default="false"/>
-  <arg name="launch_keyboard_io" default="false"/>
+  <arg name="launch_chatbot" default="false"/>
   <arg name="launch_logitech" default="false"/>
   <arg name="launch_microphone" default="false"/>
   <arg name="launch_lidar" default="true"/>
@@ -22,7 +22,7 @@
   <node pkg="turtlebot3_bringup" type="turtlebot3_diagnostics" name="turtlebot3_diagnostics" output="screen" if="$(arg launch_tb3_core)"/>
  
   <!-- Keyboard IO -->
-  <include file="$(find chatbot)/launch/keyboard_io.launch" if="$(arg launch_keyboard_io)"/>
+  <include file="$(find chatbot)/launch/basic.launch" if="$(arg launch_chatbot)"/>
 
   <!-- Logitech camera -->
   <group ns="logitech" clear_params="true">
