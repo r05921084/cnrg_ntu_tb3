@@ -4,3 +4,7 @@
 
 ipem_module/dev_src/*.dat
 *.exe
+
+card_game/scripts/\.idea/workspace\.xml
+
+card_game/scripts/\.idea/
