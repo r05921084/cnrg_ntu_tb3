@@ -15,7 +15,7 @@ NODE_NAME = 'app_server'
 
 supported_cmd = {}
 supported_cmd['card_game'] = ('card_game', '/launch/card_game.launch')
-supported_cmd['text_analysis'] = ('chatbot', '/launch/text_analysis.launch')
+supported_cmd['text_analysis'] = ('text_analysis', '/launch/text_analysis.launch')
 supported_cmd['ipem_visual_split'] = ('ipem_module', '/launch/visual_split.launch')
 supported_cmd['acoustic_anomaly'] = ('acoustic_anomaly', '/launch/publish_acoustic_anomaly.launch')
 supported_cmd['video_falling_detection'] = ('video_falling_detection', '/launch/test_launch.launch')

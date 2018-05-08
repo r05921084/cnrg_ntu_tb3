@@ -70,6 +70,7 @@ class DelayLine(object):
         wrapped_index[wrapped_index >= self.buf_len] -= self.buf_len
 
         return self.buffer[wrapped_index]
+        # return np.take(self.buffer, ) # TODO
 
 
 if __name__ == '__main__':
