@@ -12,6 +12,7 @@ from python_speech_features import mfcc
 from sklearn.metrics.pairwise import cosine_similarity
 
 from std_msgs.msg import String
+from std_msgs.msg import Float64MultiArray
 from binaural_microphone.msg import BinauralAudio
 
 
@@ -65,19 +66,22 @@ def get_raw_audio():
 
 
 def talker():
-    pub = rospy.Publisher('Acoustic_Anomaly', String, queue_size=10)
+    array = Float64MultiArray()
+    pub = rospy.Publisher('Acoustic_Anomaly', Float64MultiArray, queue_size=10)
     def process():
         ab = model()
         if ab:
+            if ab == 'normal':
+                array.data = [0]
+            else:
+                array.data = [1]
             rospy.loginfo(ab)
-            pub.publish(ab)
-    # rate = rospy.Rate(100) # 100hz
+            pub.publish(array)
     while not rospy.is_shutdown():
         while event.wait(1.0):
             event.clear()
             threading.Thread(target=process).start()
         print('timeout!')
-        # rate.sleep()
 
 
 frames = []
