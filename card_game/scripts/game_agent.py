@@ -14,13 +14,14 @@ import tempfile
 import threading
 import rospy
 from std_msgs.msg import String
+from chatbot.msg import ChatterStamped
 
 
 event = threading.Event()
 
 def callback(data):
     global msg
-    msg = data.data
+    msg = data.text
     event.set()
 
 msg = None
@@ -53,7 +54,9 @@ f.close()
 
 
 # define("ip", default="localhost")
-define("ip", default="172.16.0.105")
+
+define("ip", default="172.16.0.130")
+
 define("port", default=8888)
 
 
@@ -282,7 +285,7 @@ class Application(web.Application):
 
 def main():
     rospy.init_node('game_agent', anonymous=True)
-    rospy.Subscriber("chatter", String, callback)
+    rospy.Subscriber("chatbot/input", ChatterStamped, callback)
     options.parse_command_line()
     app = Application()
     app.listen(options.port, options.ip)

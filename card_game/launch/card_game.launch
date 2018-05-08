@@ -1,4 +1,6 @@
 <launch>
-  <node pkg='card_game' type='s2t_node.py' name='talker' output='screen' launch-prefix='gnome-terminal --command'/>
+
+  <!-- node pkg='card_game' type='s2t_node.py' name='talker' output='screen' launch-prefix='gnome-terminal command'/ -->
+
   <node name="game_agent" pkg="card_game" type="game_agent.py"/>
 </launch>

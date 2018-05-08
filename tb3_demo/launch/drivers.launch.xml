@@ -1,0 +1,46 @@
+<launch>
+
+  <arg name="launch_r200" default="false"/>
+  <arg name="launch_keyboard_io" default="false"/>
+  <arg name="launch_logitech" default="false"/>
+  <arg name="launch_microphone" default="false"/>
+  <arg name="launch_lidar" default="true"/>
+  <arg name="launch_tb3_core" default="true"/>
+  
+  <arg name="camera" default="camera" />
+
+  <!-- Binaural microphone -->
+  <include file="$(find binaural_microphone)/launch/basic.launch" if="$(arg launch_microphone)"/>
+
+  <!-- Lidar -->
+  <include file="$(find turtlebot3_bringup)/launch/turtlebot3_lidar.launch" if="$(arg launch_lidar)"/>
+
+  <!-- Turtlebot3 core -->
+  <include file="$(find turtlebot3_bringup)/launch/turtlebot3_core.launch" if="$(arg launch_tb3_core)"/>
+
+  <!-- TB3 diagnostics -->
+  <node pkg="turtlebot3_bringup" type="turtlebot3_diagnostics" name="turtlebot3_diagnostics" output="screen" if="$(arg launch_tb3_core)"/>
+ 
+  <!-- Keyboard IO -->
+  <include file="$(find chatbot)/launch/keyboard_io.launch" if="$(arg launch_keyboard_io)"/>
+
+  <!-- Logitech camera -->
+  <group ns="logitech" clear_params="true">
+    <node name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen" if="$(arg launch_logitech)">
+      <param name="video_device" value="/dev/video0" />
+      <param name="image_width" value="640" />
+      <param name="image_height" value="480" />
+      <param name="pixel_format" value="yuyv" />
+      <param name="camera_frame_id" value="usb_cam" />
+      <param name="io_method" value="mmap"/>
+    </node>
+  </group>
+
+  <!-- Realsense r200 camera -->
+  <group ns="realsense" clear_params="true">
+    <include file="$(find realsense_rgbd_camera)/launch/r200_camera_driver.launch" if="$(arg launch_r200)">
+      <arg name="camera" value="$(arg camera)"/>  
+    </include>
+  </group>
+
+</launch>

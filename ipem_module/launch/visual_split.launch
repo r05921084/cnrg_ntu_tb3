@@ -1,0 +1,8 @@
+<launch>
+  <arg name="rviz" default="false"/>
+  <node ns="ipem_module" name="IPEM_visualize_split" pkg="ipem_module" type="IPEM_visualize_split.py"/>
+
+  <!-- RViz -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find ipem_module)/rviz/show_marker.rviz" if="$(arg rviz)"/>
+
+</launch>

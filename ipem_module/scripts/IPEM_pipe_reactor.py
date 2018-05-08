@@ -59,15 +59,17 @@ def reactor():
         # rospy.spin()
         while not rospy.is_shutdown():
             while ipem_L_ready.wait(1) and ipem_R_ready.wait(1):
-                ipem_L_np = np.hstack([ipem_L_results.popleft() for _ in range(CHUNK_SIZE)])
-                ipem_R_np = np.hstack([ipem_R_results.popleft() for _ in range(CHUNK_SIZE)])
+                ipem_L_list = [ipem_L_results.popleft() for _ in range(CHUNK_SIZE)]
+                ipem_R_list = [ipem_R_results.popleft() for _ in range(CHUNK_SIZE)]
+                ipem_L_np = np.hstack(ipem_L_list)
+                ipem_R_np = np.hstack(ipem_R_list)
                 ipem_L_ready.clear()
                 ipem_R_ready.clear()
                 ani = AuditoryNerveImage(
                     header=Header(
                         stamp=rospy.Time.now()
                     ),
-                    sample_rate=SAMPLE_RATE,
+                    sample_rate=SAMPLE_RATE / 2,
                     chunk_size=CHUNK_SIZE,
                     n_subchannels=N_SUBCHANNELS,
                     left_channel=ipem_L_np,
@@ -76,6 +78,7 @@ def reactor():
                 ani_pub.publish(ani)
 
             rospy.loginfo('main loop time out!')
+            break
     finally:
         ipem_L.close()
         ipem_R.close()

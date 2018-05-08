@@ -1,0 +1,63 @@
+<launch>
+  
+  <!-- Args for modules -->
+  <arg name="launch_auditory" default="true"/>
+  <arg name="launch_anomaly" default="true"/>
+  <arg name="launch_app_server" default="true"/>
+  <arg name="launch_people_detect" default="false"/>
+
+  <!-- Args for driver -->
+  <arg name="launch_r200" default="true"/>
+  <arg name="launch_keyboard_io" default="true"/>  
+  <arg name="launch_logitech" default="false"/>
+  <arg name="launch_microphone" default="true"/>
+  <arg name="launch_lidar" default="true"/>
+  <arg name="launch_tb3_core" default="true"/>
+  
+  <!-- <arg name="nodelet_manager" default="/realsense/camera/camera_nodelet_manager"/ -->
+  
+  <arg name="launch_nav" default="false"/>
+  <arg name="launch_rviz" default="false"/>
+
+  <!-- List of drivers  
+    - Intel realsense r200 camera
+    - Keyboard IO
+    - Logitech camera    
+    - Binaural microphone
+    - TB3 lidar
+    - TB3 core -->
+  <include file="$(find tb3_demo)/launch/drivers.launch.xml">
+    <arg name="launch_r200" value="$(arg launch_r200)"/>
+    <arg name="launch_keyboard_io" value="$(arg launch_keyboard_io)"/>
+    <arg name="launch_logitech" value="$(arg launch_logitech)"/>
+    <arg name="launch_microphone" value="$(arg launch_microphone)"/>
+    <arg name="launch_lidar" value="$(arg launch_lidar)"/>
+    <arg name="launch_tb3_core" value="$(arg launch_tb3_core)"/>
+  </include>
+  
+  <!-- Modules
+    - Auditory system
+    - Anomaly detection
+    - App server
+    - RGB-D people detection -->
+
+  <!-- Auditory system -->
+  <include file="$(find ipem_module)/launch/basic.launch" if="$(arg launch_auditory)"/>
+
+  <!-- Anomaly detection -->
+  <include file="$(find acoustic_anomaly)/launch/publish_acoustic_anomaly.launch" if="$(arg launch_anomaly)"/>
+
+  <!-- App server -->
+  <include file="$(find app_server)/launch/basic.launch" if="$(arg launch_app_server)"/>
+
+  <!-- RGB-D people detection -->
+  <!--<include file="$(find turtlebot_follower_tracker)/launch/people_detection_nodelet.launch" if="$(arg launch_people_detect)">
+    <arg name="input" value="/realsense/camera/depth/points"/>
+    <arg name="nodelet_manager" value="$(arg nodelet_manager)"/>
+  </include> -->
+
+  <include file="$(find tb3_demo)/launch/nav.launch" if="$(arg launch_nav)">
+    <arg name="launch_rviz" value="$(arg launch_rviz)"/>
+  </include>
+
+</launch>
