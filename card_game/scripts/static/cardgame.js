@@ -1,12 +1,17 @@
 
 var imgQues = new Image();
 imgQues.src = 'static/images/ques.png';
+// var imgArrow = new Image();
+// imgArrow.src = 'static/images/arrow.png';
 var cards = new Array();
 var server_msg;
 var card_num;
 var card_state = new Array();
 var pre_card_idx = -1;
-webSocket_op();
+imgQues.onload = function(){
+	webSocket_op();
+};
+// webSocket_op();
 
 function loadImg(card_names){
 
@@ -182,13 +187,53 @@ function asking(content){
 	card_idx = content[0]
 	var canvas = document.getElementById('card'+card_idx);
 	var ctx=canvas.getContext("2d");
+
 	canvas.width=450;
 	canvas.height=600;
 	img = cards[card_idx];
-	ctx.fillStyle = "yellow";
-	ctx.fillRect(0, 0, canvas.width, canvas.height);
+	canvas.style.border = '15px solid red';
+	// ctx.fillStyle = "yellow";
+	// ctx.fillRect(0, 0, canvas.width, canvas.height);
 	if (card_state[card_idx]){
 		ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+		ctx.filter = 'blur(50px)';
+		// ctx.drawImage(imgArrow, 350, 0, 100, 120);
+	}
+	else{
+		ctx.drawImage(imgQues, 0, 0, canvas.width, canvas.height);
+	}
+
+	document.getElementById("textBox").innerHTML = content[1];
+
+	if (pre_card_idx>=0){
+
+		var canvas = document.getElementById('card'+pre_card_idx);
+		var ctx=canvas.getContext("2d");
+		canvas.width=300;
+		canvas.height=400;
+		canvas.style.border = '1px solid #d3d3d3';
+		if (card_state[pre_card_idx]){
+			ctx.drawImage(cards[pre_card_idx], 0, 0, canvas.width, canvas.height);
+		}
+		else{
+			ctx.drawImage(imgQues, 0, 0, canvas.width, canvas.height);
+		}
+	}
+	pre_card_idx = content[0];
+}
+
+
+function chooseCard(cardNo){
+	var canvas = document.getElementById('card'+cardNo);
+	var ctx=canvas.getContext("2d");
+	canvas.width=450;
+	canvas.height=600;
+	img = cards[cardNo];
+	// ctx.fillStyle = "yellow";
+	// ctx.fillRect(0, 0, canvas.width, canvas.height);
+	if (card_state[card_idx]){
+		ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+		ctx.drawImage(imgArrow, 350, 0, 100, 120);
 	}
 	else{
 		ctx.drawImage(imgQues, 0, 0, canvas.width, canvas.height);
@@ -210,8 +255,9 @@ function asking(content){
 			ctx.drawImage(imgQues, 0, 0, canvas.width, canvas.height);
 		}
 	}
-	pre_card_idx = content[0];
+	pre_card_idx = cardNo;
 }
+
 
 
 function zoomImage(img_idx){
@@ -227,7 +273,7 @@ function zoomImage(img_idx){
 		img = imgQues;
 	}
 
-	ctx.drawImage(img, 0, 0,canvas.width, canvas.height);
+	ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 }
 
 
@@ -248,22 +294,7 @@ function start() {
 
 function fold() {
 
-	// var card_id = ["card0", "card1", "card2", "card3"]
 	pre_card_idx = -1;
-	// if(pre_card_idx >= 0){
-	// 	var canvas = document.getElementById('card'+pre_card_idx);
-	// 	var ctx=canvas.getContext("2d");
-	// 	canvas.width=300;
-	// 	canvas.height=400;
-	// 	if(card_state[pre_card_idx]){
-	// 		img = cards[pre_card_idx];
-	// 	}
-	// 	else{
-	// 		img = imgQues;
-	// 	}
-	// 	ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, canvas.width, canvas.height);
-
-	// }
 
 	for(i=0;i<card_num;i++){
 		card_state[i] = false;
@@ -271,6 +302,7 @@ function fold() {
 		var ctx = canvas.getContext("2d");
 		canvas.width=300;
 		canvas.height=400;
+		canvas.style.border = '1px solid #d3d3d3';
     	ctx.clearRect(0, 0, canvas.width, canvas.height);
     	ctx.drawImage(imgQues, x=0, y=0, width=canvas.width, height=canvas.height);
     }
@@ -278,7 +310,9 @@ function fold() {
 }
 
 function webSocket_op() {
+  
     var wsUri = "ws://172.16.0.130:8888/socket";
+  
     websocket = new WebSocket(wsUri);
     websocket.onopen = function(evt) { 
         onOpen(evt);
@@ -297,7 +331,8 @@ function webSocket_op() {
 function onOpen(evt) { 
     doSend("CONNECTED!"); 
 }  
-function onClose(evt) { 
+function onClose(evt) {
+	console.log('DISCONNECTED!')
 	// alert("DISCONNECTED");
     // writeToScreen("DISCONNECTED");
 }  
