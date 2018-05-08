@@ -1,0 +1,6 @@
+<launch>
+  <node name="pos_vel_plot" 
+  pkg="rqt_plot" 
+  type="rqt_plot"
+  args="/Acoustic_Anomaly/data[0]" />
+</launch>
