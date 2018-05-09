@@ -11,7 +11,7 @@ from keras.models import load_model
 from python_speech_features import mfcc
 from sklearn.metrics.pairwise import cosine_similarity
 
-from std_msgs.msg import String
+from std_msgs.msg import String, Header
 from std_msgs.msg import Float64MultiArray
 from chatbot.msg import ChatterStamped
 from binaural_microphone.msg import BinauralAudio
@@ -105,9 +105,10 @@ def talker():
                 array.data = [0]
             else:
                 array.data = [1]
+                pub_to_chatbot(text=ab)
             rospy.loginfo(ab)
             pub.publish(array)
-            pub_to_chatbot(text=ab)
+            
 
     while not rospy.is_shutdown():
         while event.wait(1.0):

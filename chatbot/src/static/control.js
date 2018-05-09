@@ -43,6 +43,7 @@ var chatObj = {
             message_bubble.innerHTML = message;
             box.appendChild(message_bubble);
         }
+        box.scrollTop = box.scrollHeight;
     }
 };
 

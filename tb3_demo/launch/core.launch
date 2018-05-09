@@ -2,7 +2,7 @@
   
   <!-- Args for modules -->
   <arg name="launch_auditory" default="true"/>
-  <arg name="launch_anomaly" default="true"/>
+  <arg name="launch_anomaly" default="false"/>
   <arg name="launch_app_server" default="true"/>
   <arg name="launch_people_detect" default="false"/>
 
