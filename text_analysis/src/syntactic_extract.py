@@ -32,7 +32,7 @@ def pos_tag_analysis(sentence):
             tmp_a += 1
         elif flag[0] == 'r':
             tmp_r += 1
-    return [tmp_n/tmp_token, tmp_v/tmp_token, tmp_a/tmp_token, tmp_r/tmp_token, len(word_type)/tmp_token]
+    return np.array([tmp_n/tmp_token, tmp_v/tmp_token, tmp_a/tmp_token, tmp_r/tmp_token, len(word_type)/tmp_token])
 
 def semantic_analysis(sentence, w2v_model):
 
