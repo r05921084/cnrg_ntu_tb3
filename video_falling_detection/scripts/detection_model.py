@@ -2,11 +2,11 @@
 import rospy
 import numpy as np
 
-def model(pic, pub):
+def model(pic):
 
     if pic.mean()<30:
         # rospy.loginfo('ABNORMALL!!!!!!!!!!!!!!')
-        pub.publish('ABNORMALL!!!!!!!!!!!!!!')
+        return 'ABNORMALL!!!!!!!!!!!!!!'
     else:
         #rospy.loginfo('========NORMALL========')
-        pub.publish('========NORMALL========')
+        return '========NORMALL========'

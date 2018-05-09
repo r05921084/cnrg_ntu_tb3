@@ -1,3 +1,3 @@
 <launch>
-  <node name="get_image" pkg="video_falling_detection" type="img_sub.py" output="screen"/>
+  <node name="video_falling_detection" pkg="video_falling_detection" type="main.py" output="screen"/>
 </launch>
