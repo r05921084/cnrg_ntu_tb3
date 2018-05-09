@@ -39,7 +39,7 @@ class Socket(websocket.WebSocketHandler):
         # 當有訊息進來時，將此訊息發送給其他 WebSocket
         print ' [x] send message.'
         for user in ChatManager.users:
-            user.write_message('You send: '+message)
+            user.write_message('{"time": "23:59", "text":"text", "source":"source"}')
 
 # 相關設定參數
 settings = dict(

@@ -26,11 +26,36 @@ var chatObj = {
         // $("#msg_box").append(message);
         var box = document.getElementById("chat_logs");
         var message_bubble = document.createElement('li');
-        message_bubble.className = 'message_bot';
-        message_bubble.innerHTML = message;
-        box.appendChild(message_bubble);
+
+        msg_json = parseJSON(message);
+        if (msg_json){
+            var message_info = document.createElement('li');
+            message_info.className = 'message_info';
+            message_info.innerHTML = msg_json.time + ' ' + msg_json.source;
+            box.appendChild(message_info);
+
+            message_bubble.className = 'message_bot';
+            message_bubble.innerHTML = msg_json.text;
+            box.appendChild(message_bubble);
+        }
+        else {
+            message_bubble.className = 'message_bot';
+            message_bubble.innerHTML = message;
+            box.appendChild(message_bubble);
+        }
     }
 };
+
+function parseJSON(str){
+    try {
+        json = JSON.parse(str);
+    } catch (e) {
+        return false;
+    }
+    return json;
+}
+
+
 
 $(function(){
     var btn = $("#msg_btn");
