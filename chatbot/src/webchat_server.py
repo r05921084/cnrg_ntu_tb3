@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 import os, sys
+import json
+import datetime
 from tornado import web, ioloop, websocket
 from tornado.options import define, options
 from chatbot_io import ChatBot_IO
@@ -44,9 +46,11 @@ class Socket(websocket.WebSocketHandler):
         Socket.chatbot.send_to_ros(message)
 
     def send_to_ws(self, message):
-        print ' send_to_ws: "%s"' % message
+        datetime_str = datetime.datetime.fromtimestamp(message.header.stamp.to_sec()).strftime('%Y-%m-%d %H:%M:%S')
+        msg_json = json.dumps({'time': datetime_str, 'text': message.text, 'source': message.source})
+        print ' send_to_ws: "%s"' % msg_json
         for user in ChatManager.users:
-            user.write_message(message)
+            user.write_message(msg_json)
 
 
 settings = dict(

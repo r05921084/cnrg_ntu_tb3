@@ -17,7 +17,7 @@ class ChatBot_IO(object):
 
     def __callback(self, data):
         # dict_data = {'priority': data.priority, 'source': data.source, 'text': data.text}
-        self.callback(data.text)
+        self.callback(data)
 
     def send_to_ros(self, text, priority=0):
         msg = ChatterStamped(
