@@ -37,7 +37,7 @@ class Socket(websocket.WebSocketHandler):
     def on_message(self, message):
         print ' [x] send message.'
         for user in ChatManager.users:
-            user.write_message('You send: '+message)
+            user.write_message('{"time": "23:59", "text":"text", "source":"source"}')
 
 
 settings = dict(
