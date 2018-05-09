@@ -19,7 +19,7 @@ supported_kw['card_game'] = ('card_game', '/launch/card_game.launch')
 supported_kw['text_analysis'] = ('text_analysis', '/launch/text_analysis.launch')
 supported_kw['ipem_visual_split'] = ('ipem_module', '/launch/visual_split.launch')
 supported_kw['acoustic_anomaly'] = ('acoustic_anomaly', '/launch/publish_acoustic_anomaly.launch')
-supported_kw['video_falling_detection'] = ('video_falling_detection', '/launch/test_launch.launch')
+supported_kw['video_falling_detection'] = ('video_falling_detection', '/launch/app_video_abnormal.launch')
 
 supported_op = ['run', 'start', 'end', 'close']
 
