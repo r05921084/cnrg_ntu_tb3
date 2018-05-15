@@ -79,13 +79,13 @@ def build_nengo_model():
             nengo.Connection(ens_arr_R[i], ens_arr_add[i], synapse=synapse2)
             nengo.Connection(ens_arr_add[i], output_node[i], synapse=synapse3)
 
-        ens_arr_add_probe = nengo.Probe(output_node, label='output_node', synapse=0)  # , sample_every=0.01
+        output_probe = nengo.Probe(output_node, label='output_node_probe', synapse=0)  # , sample_every=0.01
         # ens_arr_add_probe = None
 
         nengo_dl.configure_settings(session_config={"gpu_options.allow_growth": True})
         simulator = nengo_dl.Simulator(model, dt=(1. / SAMPLE_RATE), unroll_simulation=32, minibatch_size=N_DELAY_VAL)
 
-    return simulator, input_node_L, input_node_R, ens_arr_add_probe   
+    return simulator, input_node_L, input_node_R, output_probe   
 
 
 def run_MSO_model():
