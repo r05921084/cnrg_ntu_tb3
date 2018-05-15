@@ -12,6 +12,8 @@ from gtts import gTTS
 from pygame import mixer
 import tempfile
 import threading
+import socket
+
 import rospy
 from std_msgs.msg import String
 from chatbot.msg import ChatterStamped
@@ -21,6 +23,7 @@ event = threading.Event()
 
 def callback(data):
     global msg
+    # msg = data.data
     msg = data.text
     event.set()
 
@@ -53,16 +56,23 @@ card_property = json.load(f)
 f.close()
 
 
-# define("ip", default="localhost")
 
-define("ip", default="172.16.0.130")
+# define("ip", default="172.16.0.130")
 
-define("port", default=8888)
+
+def get_ip_address():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    return s.getsockname()[0]
+
+URL = get_ip_address()
+define("ip", default = URL)
+define("port", default = 8888)
 
 
 class Chat(web.RequestHandler):
     def get(self):
-        self.render("cardgame.html")
+        self.render('cardgame.html', address = URL + ':8888')
 
 
 class MyWebSocket(websocket.WebSocketHandler):
@@ -118,8 +128,11 @@ def analysis(statement, card_key):
     dont_know_words = ['不知道', '不明白', '不曉得', '不清楚', '不懂' , '不會', '不能理解']
     stop_words = ['不玩了', '不想玩了']
     dont_know_comment = ['再想想看，你一定可以想起來的', '這是{}'.format(key_map[card_key])]
+
+    comment = None
     correct = False
-    dont_know = False
+    # dont_know = False
+
     for p in card_property[card_key]:
         if statement.find(p)>=0:
             correct = True
@@ -137,52 +150,45 @@ def analysis(statement, card_key):
     return correct, comment
 
 
-
-
-
-
-
 def agent(websocket):
     # TODO: check connection
 
-    def send_command(command, n=''):
+    def send_command(command):
         #TODO: async IO
-        if type(n)==str:
-            if n=='':
-                msg = command
-            else:
-                msg = command+','+n
-
-        elif type(n)==int:
-            msg = command+','+str(n)
-
-        else:
-            msg = command+','+','.join(n)
-
-        websocket.write_message(msg)
+        # if type(n)==str:
+        #     if n=='':
+        #         msg = command
+        #     else:
+        #         msg = command+','+n
+        #
+        # elif type(n)==int:
+        #     msg = command+','+str(n)
+        #
+        # else:
+        #     msg = command+','+','.join(n)
+        websocket.write_message(command)
 
 
     # Set level (card number)
-    send_command('init', card_num)
+    send_command('init,3')
+    # send_command('init,{}'.format(card_num))
 
-    response_time = np.zeros(card_num)
+    reaction_time = np.zeros(card_num)
 
     # Loading image
     select_card = random.sample(cards_all, card_num)
     # print select_card
-    send_command('load', select_card)
-
+    send_command('load,{}'.format(','.join(select_card)))
 
     # Introducing the game
     for s in game_introduction:
-        send_command('talk', s)
+        send_command('talk,{}'.format(s))
         speak(s)
         feedback = get_feedback()
         # print 'people: '+feedback
 
-
     # Playing
-    send_command('start', s)
+    send_command('start')
     
     ## Describing the card
     # TODO: check if the answer is right
@@ -190,7 +196,7 @@ def agent(websocket):
         right = False
 
         s_describe = random.choice(card_describe)
-        send_command('ask', [str(i), s_describe])
+        send_command('ask,{},{}'.format(i, s_describe))
         speak(s_describe)
 
         while not right:
@@ -198,13 +204,12 @@ def agent(websocket):
             right, comment = analysis(feedback, select_card[i][:-4])
             # s_praise = random.choice(praise)
             print comment
-            send_command('talk', comment)
+            send_command('talk,{}'.format(comment))
             speak(comment)
         time.sleep(2)
 
 
-
-    send_command('talk', "都記住了嗎?")
+    send_command('talk,都記住了嗎?')
     speak("都記住了嗎")
     feedback = get_feedback()
 
@@ -216,7 +221,7 @@ def agent(websocket):
     ## Test?
     for i in range(card_num):
         s_test = random.choice(test)
-        send_command('ask', [str(i), s_test])
+        send_command('ask,{},{}'.format(i, s_test))
         speak(s_test)
         t = time.time()
         ###
@@ -245,9 +250,9 @@ def agent(websocket):
 
         accuracy[i] = (1. / count) * 100
         time.sleep(1)
-        response_time[i] = time.time() - t
+        reaction_time[i] = time.time() - t
 
-    total_time = np.sum(response_time)
+    total_time = np.sum(reaction_time)
     send_command('talk,共花了%d秒'%total_time)
     # send_command('talk,共花了{}秒'.format(int(total_time)))
     with open(os.path.join(STATIC_PATH, 'history.txt'), 'w') as f:
@@ -255,11 +260,15 @@ def agent(websocket):
         f.write('card, reaction time, accuracy\n')
 
         for i in range(card_num):
-            f.write('{}, {:.1f} s, {:.2f}%\n'.format(select_card[i][:-4], response_time[i], accuracy[i]))
+            f.write('{}, {:.1f} s, {:.2f}%\n'.format(select_card[i][:-4], reaction_time[i], accuracy[i]))
 
 
     rospy.signal_shutdown('Game Finished')
     
+
+def level_adaptation(curr_level, accuracy, reaction_time):
+    adapted_level = 0
+    return adapted_level
 
 
 settings = dict(
@@ -286,6 +295,7 @@ class Application(web.Application):
 def main():
     rospy.init_node('game_agent', anonymous=True)
     rospy.Subscriber("chatbot/input", ChatterStamped, callback)
+    # rospy.Subscriber("chatter", String, callback)
     options.parse_command_line()
     app = Application()
     app.listen(options.port, options.ip)
