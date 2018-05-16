@@ -10,8 +10,9 @@ class DelayLine(object):
         self.buffer = initial_value * np.ones((self.buf_len,) + tuple(data_dim))
         self.buf_head = 0
         self.n_steps = 0
+        self.timecode = np.zeros((self.buf_len,), dtype=np.object)
 
-    def update(self, data):
+    def update(self, data, timecode=None):
         if data.shape[0] > self.buf_len:
             raise ValueError('buffer overflow: updating %d steps while buffer is only %d steps.' % (data.shape[0], self.buf_len))
 
@@ -21,6 +22,9 @@ class DelayLine(object):
         self.buf_head = (stop - self.buf_len) if stop >= self.buf_len else stop
 
         self.buffer[wrapped_index] = data
+
+        if timecode:
+            self.timecode[wrapped_index] = timecode        
 
         self.n_steps += data.shape[0]
         
@@ -42,7 +46,7 @@ class DelayLine(object):
 
         return view
 
-    def batch_view_chunk(self, start_step, n_steps, delay_steps=[0]):
+    def batch_view_chunk(self, start_step, n_steps, delay_steps=[0], return_timecode=False):
         delay_steps = np.array(delay_steps, dtype=np.int)        
         if not delay_steps.shape:
             raise ValueError('delay_steps must be an array-like.')
@@ -69,7 +73,10 @@ class DelayLine(object):
         wrapped_index = np.arange(start, stop)[np.newaxis, :] - delay_steps[:, np.newaxis]
         wrapped_index[wrapped_index >= self.buf_len] -= self.buf_len
 
-        return self.buffer[wrapped_index]
+        if return_timecode:
+            return self.buffer[wrapped_index], self.timecode[wrapped_index[0, -1]]
+        else:
+            return self.buffer[wrapped_index]
         # return np.take(self.buffer, ) # TODO
 
 
