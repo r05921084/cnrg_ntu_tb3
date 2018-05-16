@@ -46,10 +46,11 @@ class DelayLine(object):
 
         return view
 
-    def batch_view_chunk(self, start_step, n_steps, delay_steps=[0], return_timecode=False):
-        delay_steps = np.array(delay_steps, dtype=np.int)        
-        if not delay_steps.shape:
+    def batch_view_chunk(self, start_step, n_steps, delay_steps=[0]):
+        if not isinstance(delay_steps, (list, tuple, np.ndarray)):
             raise ValueError('delay_steps must be an array-like.')
+        else:
+            delay_steps = np.array(delay_steps, dtype=np.int)
 
         if np.min(delay_steps) < 0:
             raise ValueError('delay_steps CAN\'T be negative.')
@@ -57,27 +58,27 @@ class DelayLine(object):
         steps_behind = self.n_steps - start_step
 
         if (steps_behind + np.max(delay_steps)) > self.buf_len:
-            warnings.warn('Buffer already forgot! Abort.', Warning)
-            return
+            raise ValueError('Buffer already forgot!')
 
         if steps_behind < n_steps:            
             if steps_behind > 0:
                 n_steps = steps_behind
                 warnings.warn('Buffer is not there yet! shrink n_steps to %d.' % n_steps, Warning)
             else:
-                warnings.warn('Buffer is not there yet! Abort.', Warning)
-                return        
+                raise ValueError('Buffer is not there yet!')
         
         start = self.buf_head - steps_behind
-        stop = start + n_steps
+        stop = start + n_steps  # steps_behind must >= n_steps
         wrapped_index = np.arange(start, stop)[np.newaxis, :] - delay_steps[:, np.newaxis]
-        wrapped_index[wrapped_index >= self.buf_len] -= self.buf_len
-
-        if return_timecode:
-            return self.buffer[wrapped_index], self.timecode[wrapped_index[0, -1]]
-        else:
-            return self.buffer[wrapped_index]
+        
+        return self.buffer[wrapped_index]
         # return np.take(self.buffer, ) # TODO
+
+    def get_timecode(self, step):
+        steps_behind = self.n_steps - step
+        if steps_behind > self.buf_len:
+            raise ValueError('Timecode already forgot!')
+        return self.timecode[self.buf_head - steps_behind]
 
 
 if __name__ == '__main__':
