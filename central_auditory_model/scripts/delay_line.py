@@ -10,8 +10,9 @@ class DelayLine(object):
         self.buffer = initial_value * np.ones((self.buf_len,) + tuple(data_dim))
         self.buf_head = 0
         self.n_steps = 0
+        self.timecode = np.zeros((self.buf_len,), dtype=np.object)
 
-    def update(self, data):
+    def update(self, data, timecode=None):
         if data.shape[0] > self.buf_len:
             raise ValueError('buffer overflow: updating %d steps while buffer is only %d steps.' % (data.shape[0], self.buf_len))
 
@@ -21,6 +22,9 @@ class DelayLine(object):
         self.buf_head = (stop - self.buf_len) if stop >= self.buf_len else stop
 
         self.buffer[wrapped_index] = data
+
+        if timecode:
+            self.timecode[wrapped_index] = timecode        
 
         self.n_steps += data.shape[0]
         
@@ -43,9 +47,10 @@ class DelayLine(object):
         return view
 
     def batch_view_chunk(self, start_step, n_steps, delay_steps=[0]):
-        delay_steps = np.array(delay_steps, dtype=np.int)        
-        if not delay_steps.shape:
+        if not isinstance(delay_steps, (list, tuple, np.ndarray)):
             raise ValueError('delay_steps must be an array-like.')
+        else:
+            delay_steps = np.array(delay_steps, dtype=np.int)
 
         if np.min(delay_steps) < 0:
             raise ValueError('delay_steps CAN\'T be negative.')
@@ -53,24 +58,27 @@ class DelayLine(object):
         steps_behind = self.n_steps - start_step
 
         if (steps_behind + np.max(delay_steps)) > self.buf_len:
-            warnings.warn('Buffer already forgot! Abort.', Warning)
-            return
+            raise ValueError('Buffer already forgot!')
 
         if steps_behind < n_steps:            
             if steps_behind > 0:
                 n_steps = steps_behind
                 warnings.warn('Buffer is not there yet! shrink n_steps to %d.' % n_steps, Warning)
             else:
-                warnings.warn('Buffer is not there yet! Abort.', Warning)
-                return        
+                raise ValueError('Buffer is not there yet!')
         
         start = self.buf_head - steps_behind
-        stop = start + n_steps
+        stop = start + n_steps  # steps_behind must >= n_steps
         wrapped_index = np.arange(start, stop)[np.newaxis, :] - delay_steps[:, np.newaxis]
-        wrapped_index[wrapped_index >= self.buf_len] -= self.buf_len
-
+        
         return self.buffer[wrapped_index]
         # return np.take(self.buffer, ) # TODO
+
+    def get_timecode(self, step):
+        steps_behind = self.n_steps - step
+        if steps_behind > self.buf_len:
+            raise ValueError('Timecode already forgot!')
+        return self.timecode[self.buf_head - steps_behind]
 
 
 if __name__ == '__main__':
