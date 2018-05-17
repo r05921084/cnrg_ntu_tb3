@@ -147,10 +147,9 @@ def run_MSO_model():
 
             mso_data = sim.model.params[out_probe][-1].reshape((N_DELAY_VAL, N_SUBCHANNELS, SIM_OUTPUT_SIZE))
             mso_data = maxpooling(mso_data, axis=2)
-            print mso_data.shape
+            # print mso_data.shape
             mso_data = np.swapaxes(mso_data, 1, 2)
-            print mso_data.shape
-
+            # print mso_data.shape
 
             mso_msg = AuditoryNerveImage(header=Header(
                                             stamp=rospy.Time.now()

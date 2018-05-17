@@ -21,6 +21,8 @@ NODE_NAME = 'webcam_stereo'
 
 RMS_TOPIC_NAME = 'source_rms'
 
+RAW_TOPIC_NAME = 'source_raw'
+
 
 if __name__ == '__main__':
 
@@ -33,9 +35,13 @@ if __name__ == '__main__':
         rospy.init_node(NODE_NAME, anonymous=False)
 
         raw_pub = rospy.Publisher(TOPIC_NAME, BinauralAudio, queue_size=1)
-        raw_str_pub = rospy.Publisher('/audio_stream_raw', String, queue_size=1)  # for backward compability.
+        # raw_str_pub = rospy.Publisher('/audio_stream_raw', String, queue_size=1)  # for backward compability.
+
         rms_L_pub = rospy.Publisher(RMS_TOPIC_NAME + '/L', Float32, queue_size=1)
         rms_R_pub = rospy.Publisher(RMS_TOPIC_NAME + '/R', Float32, queue_size=1)
+
+        # raw_L_pub = rospy.Publisher(RAW_TOPIC_NAME + '/L', Float32, queue_size=1)
+        # raw_R_pub = rospy.Publisher(RAW_TOPIC_NAME + '/R', Float32, queue_size=1)
 
         rospy.loginfo('"%s" starts publishing to "%s".' % (NODE_NAME, TOPIC_NAME))
         
@@ -54,7 +60,7 @@ if __name__ == '__main__':
                 right_channel=np_data[:, 1]
             )
             raw_pub.publish(ba)
-            raw_str_pub.publish(raw_str)
+            # raw_str_pub.publish(raw_str)
 
             rms_L_pub.publish(np.sqrt(np.mean(np.square(np_data[:, 0].astype(np.float)))))
             rms_R_pub.publish(np.sqrt(np.mean(np.square(np_data[:, 1].astype(np.float)))))

@@ -146,8 +146,12 @@ def run_LSO_model():
         try:
             view_start = sim.n_steps * MAXPOOLING_STEP - MAXPOOLING_OVERLAP
             view_len = SIM_CHUNK_SIZE + MAXPOOLING_OVERLAP
-            timecode = dl_L.get_timecode(view_start + view_len - 1)
-            assert timecode == dl_L.get_timecode(view_start + MAXPOOLING_OVERLAP), 'Timecode out of sync!'
+            timecode = dl_L.get_timecode(view_start + MAXPOOLING_OVERLAP)
+            timecode_2 = dl_L.get_timecode(view_start + view_len - 1)
+            if timecode != timecode_2:
+                for i in range(view_len):
+                    print i, dl_L.get_timecode(view_start + i)
+            assert timecode == timecode_2, 'Timecode out of sync! %f, %f' % (timecode.to_sec(), timecode_2.to_sec())
             in_L_data = dl_L.batch_view_chunk(view_start, view_len)
             in_R_data = dl_R.batch_view_chunk(view_start, view_len)
         except ValueError:
