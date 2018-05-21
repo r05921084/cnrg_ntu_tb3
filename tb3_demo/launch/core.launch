@@ -52,8 +52,8 @@
 
   <!-- RGB-D people detection -->
   <include file="$(find turtlebot_follower_tracker)/launch/people_detection_nodelet.launch" if="$(arg launch_people_detect)">
-    <remap from="input" to="/realsense/camera/depth/points"/>
-    <remap from="output" to="/turtlebot_people_detection/detected_people"/>
+    <arg name="input" value="/realsense/camera/depth/points"/>
+    <arg name="output" value="/turtlebot_people_detection/detected_people"/>
     <arg name="nodelet_manager" value="$(arg nodelet_manager)"/>
     <rosparam file="$(find turtlebot_follower_tracker)/params/follower_tracker_params.yaml" command="load" />
   </include>

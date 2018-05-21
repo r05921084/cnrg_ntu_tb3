@@ -14,7 +14,7 @@ from binaural_microphone.msg import BinauralAudio
 
 
 FILE_SAMPLE_RATE = 44100
-FILE_PATH_AND_NAME = '/home/cnrg-ntu/PycharmProjects/Binaural-Auditory-Localization-System/SoundSplitter/coffee'
+FILE_PATH_AND_NAME = '/home/cnrg-ntu-nuc/Desktop/wave_stereo/coffee'
 FILE_ANGLE = 0
 DOWN_SAMPLE_FACTOR = 2
 
