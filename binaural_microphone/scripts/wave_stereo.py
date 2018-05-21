@@ -106,8 +106,8 @@ if __name__ == '__main__':
             raw_pub.publish(ba)
             # raw_str_pub.publish(raw_str)
 
-            rms_L_pub.publish(np.sqrt(np.mean(np.square(data_L[data_start:data_stop].astype(np.float) / 32767.))))
-            rms_R_pub.publish(np.sqrt(np.mean(np.square(data_R[data_start:data_stop].astype(np.float) / 32767.))))
+            rms_L_pub.publish(np.sqrt(np.mean(np.square(data_L[data_start:data_stop].astype(np.float)))))
+            rms_R_pub.publish(np.sqrt(np.mean(np.square(data_R[data_start:data_stop].astype(np.float)))))
 
             data_start = data_stop if data_stop < data_L.shape[0] else 0
             rate.sleep()

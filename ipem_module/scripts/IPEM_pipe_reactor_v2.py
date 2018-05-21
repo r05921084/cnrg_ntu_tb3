@@ -87,7 +87,7 @@ def reactor():
                 ani_pub.publish(ani)
 
             rospy.loginfo('main loop time out!')
-            # break
+            break
     finally:
         ipem_L.close()
         ipem_R.close()
