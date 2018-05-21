@@ -1,0 +1,3 @@
+<launch>
+  <node ns="binaural_audio" pkg="binaural_microphone" name="wave_stereo" type="wave_stereo.py" output="screen"/>
+</launch>

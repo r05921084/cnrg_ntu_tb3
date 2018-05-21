@@ -17,11 +17,9 @@ CHANNELS = 2
 FORMAT = pyaudio.paInt16
 
 TOPIC_NAME = 'source_stream'
-NODE_NAME = 'webcam_stereo'
+NODE_NAME = 'pyaudio_stereo'
 
 RMS_TOPIC_NAME = 'source_rms'
-
-RAW_TOPIC_NAME = 'source_raw'
 
 
 if __name__ == '__main__':
@@ -39,9 +37,6 @@ if __name__ == '__main__':
 
         rms_L_pub = rospy.Publisher(RMS_TOPIC_NAME + '/L', Float32, queue_size=1)
         rms_R_pub = rospy.Publisher(RMS_TOPIC_NAME + '/R', Float32, queue_size=1)
-
-        # raw_L_pub = rospy.Publisher(RAW_TOPIC_NAME + '/L', Float32, queue_size=1)
-        # raw_R_pub = rospy.Publisher(RAW_TOPIC_NAME + '/R', Float32, queue_size=1)
 
         rospy.loginfo('"%s" starts publishing to "%s".' % (NODE_NAME, TOPIC_NAME))
         
