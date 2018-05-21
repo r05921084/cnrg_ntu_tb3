@@ -54,9 +54,19 @@ def run_IC_model():
     rospy.Subscriber(SUB_MSO_TOPIC_NAME, AuditoryNerveImage, mso_cb)
     rospy.Subscriber(SUB_LSO_TOPIC_NAME, AuditoryNerveImage, lso_cb)
 
-    ic_pub = [rospy.Publisher('%s_%d' % (PUB_TOPIC_NAME, i), Float32, queue_size=1) for i in range(7)]
+    # ic_pub = [rospy.Publisher('%s_%d' % (PUB_TOPIC_NAME, i), Float32, queue_size=1) for i in range(7)]
+    ic_pub = rospy.Publisher('%s_%d' % (PUB_TOPIC_NAME, 0), Float32, queue_size=1)
 
     rospy.loginfo('"%s" starts subscribing to "%s" and "%s".' % (NODE_NAME, SUB_MSO_TOPIC_NAME, SUB_LSO_TOPIC_NAME))
+
+    est_weight=np.concatenate(([3], 5*np.ones(21), 3*np.ones(12), np.ones(6)))
+    est_weight_matrix=np.zeros([40,150])
+    n_angle = np.arange(7)
+
+    start=0
+    for c in range(0,40):
+        est_weight_matrix[c,int(start):int(start+est_weight[c])]=1
+        start=start+est_weight[c]
 
     while not rospy.is_shutdown() and event.wait(1.0):
         event.clear()
@@ -94,12 +104,25 @@ def run_IC_model():
 
             full_freq = np.concatenate([low_freq, high_freq], axis=2)
 
-            angle_estimate = np.mean(full_freq, axis=(1, 2))
+            full_freq = np.mean(full_freq, axis=1)
+
+            the_argmax = np.argmax(full_freq, axis=0)
+
+            votes = np.dot(the_argmax, est_weight_matrix)
+
+            angle_estimate = np.argmax(np.histogram(votes, n_angle)[0])
+            
+            print angle_estimate
+
+            ic_pub.publish(angle_estimate)
+
+
+            # angle_estimate = np.mean(full_freq, axis=(1, 2))
 
             # print low_freq.shape, high_freq.shape, full_freq.shape, angle_estimate.shape
 
-            for i in range(7):
-                ic_pub[i].publish(angle_estimate[i])
+            # for i in range(7):
+            #     ic_pub[i].publish(angle_estimate[i])
 
 
             # for step in range(mso_msg.shape[1]):
