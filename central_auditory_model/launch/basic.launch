@@ -1,0 +1,8 @@
+<launch>
+  <arg name="sim_src" default="false"/>
+  <include file="$(find central_auditory_model)/launch/simulated_source.launch" if="$(arg sim_src)"/>
+
+  <node pkg="central_auditory_model" name="MSO_model_v4_1" type="MSO_model_v4_1.py" respawn="true" />
+  <node pkg="central_auditory_model" name="LSO_model" type="LSO_model.py" respawn="true" />
+  <node pkg="central_auditory_model" name="IC_model_numerical" type="IC_model_numerical.py" output="screen" respawn="true" />
+</launch>

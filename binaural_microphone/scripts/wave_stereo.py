@@ -5,16 +5,19 @@ import numpy as np
 import time
 import os
 
-import rospy
+import rospy, rospkg
 from std_msgs.msg import Float32
 from std_msgs.msg import Int32
 from std_msgs.msg import String
 from std_msgs.msg import Header
+from dynamic_reconfigure.server import Server
+from binaural_microphone.cfg import waveStereoConfig
 from binaural_microphone.msg import BinauralAudio
 
+PACKAGE_DIR_PATH = rospkg.RosPack().get_path('binaural_microphone')
 
 FILE_SAMPLE_RATE = 44100
-FILE_PATH_AND_NAME = '/home/cnrg-ntu-nuc/Desktop/wave_stereo/coffee'
+FILE_PATH_AND_NAME = 'wave_stereo_db/coffee'
 FILE_ANGLE = 0
 DOWN_SAMPLE_FACTOR = 2
 
@@ -50,14 +53,15 @@ def load_data(file_path_name=FILE_PATH_AND_NAME, angle=FILE_ANGLE):
         print 'unsupported angle: %d' % angle
         return
 
-    fn_L = '%s_%dL.wav' % (file_path_name, angle)
-    fn_R = '%s_%dR.wav' % (file_path_name, angle)
+    fn_L = '%s_%dL.wav' % (PACKAGE_DIR_PATH + '/' + file_path_name, angle)
+    fn_R = '%s_%dR.wav' % (PACKAGE_DIR_PATH + '/' + file_path_name, angle)
 
     if file_path_name is not FILE_PATH_AND_NAME:
         if os.path.isfile(fn_L) and os.path.isfile(fn_R):
             FILE_PATH_AND_NAME = file_path_name
             print 'file changed to:', FILE_PATH_AND_NAME
         else:
+            print 'files not found:', fn_L, fn_R
             return
 
     data_L = wave_preprocessing(wave.open(fn_L, 'rb'))
@@ -65,6 +69,12 @@ def load_data(file_path_name=FILE_PATH_AND_NAME, angle=FILE_ANGLE):
 
     data_start = 0
 
+
+def dynamic_reconfig_cb(config, level):
+    rospy.loginfo('Reconfiugre Request: {angle}, {file_path_name}.'.format(**config))
+    load_data(config['file_path_name'], SUPPORTED_ANGLES[config['angle']])
+    (config['file_path_name'], config['angle']) = (FILE_PATH_AND_NAME, SUPPORTED_ANGLES.index(FILE_ANGLE))
+    return config
 
 
 if __name__ == '__main__':
@@ -75,6 +85,8 @@ if __name__ == '__main__':
 
     try:
         rospy.init_node(NODE_NAME, anonymous=False)
+
+        reconfig_server = Server(waveStereoConfig, dynamic_reconfig_cb)
 
         raw_pub = rospy.Publisher(TOPIC_NAME, BinauralAudio, queue_size=1)
         # raw_str_pub = rospy.Publisher('/audio_stream_raw', String, queue_size=1)  # for backward compability.
