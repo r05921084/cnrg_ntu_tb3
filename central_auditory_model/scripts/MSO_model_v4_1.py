@@ -22,7 +22,7 @@ N_SUBCHANNELS = 40
 MAX_DELAY = 5.
 MAX_STEPS = int(MAX_DELAY * SAMPLE_RATE)
 
-DELAY_STEPS = [0, 1, 3, 5, 7, 9, 10]
+DELAY_STEPS = [10, 9, 7, 5, 3, 1, 0]  # [0, 1, 3, 5, 7, 9, 10]
 DELAY_STEPS_R = list(reversed(DELAY_STEPS))
 N_DELAY_VAL = len(DELAY_STEPS)
 MAXPOOLING = 100
@@ -103,7 +103,7 @@ def run_MSO_model():
             rospy.logwarn('shape mismatch: %d -> %d %d' % (len(data.left_channel), data.chunk_size, data.n_subchannels))
             return
         else:
-            dl_L.update(ani_L, timecode=data.header.stamp)
+            dl_L.update(ani_L, timecode=data.timecode)
             dl_R.update(ani_R)
             event.set()
 
@@ -113,7 +113,7 @@ def run_MSO_model():
 
     rospy.loginfo('"%s" starts subscribing to "%s".' % (NODE_NAME, SUB_TOPIC_NAME))
 
-    while not rospy.is_shutdown() and event.wait(1.0):
+    while not rospy.is_shutdown() and event.wait(5.):
         yet_to_run = dl_R.n_steps - sim.n_steps * SIM_SKIP_FACTOR - SIM_CHUNK_SIZE
 
         if yet_to_run == 0:
@@ -164,6 +164,7 @@ def run_MSO_model():
                                         right_channel=[])
             mso_pub.publish(mso_msg)
             print '[%f] ran %d steps in %5.3f sec, %d steps yet to run.' % (timecode.to_sec(), SIM_OUTPUT_SIZE, timeit.default_timer() - t2, yet_to_run)
+        # TODO: handle timeout and not directly exit.
 
 
 if __name__ == '__main__':

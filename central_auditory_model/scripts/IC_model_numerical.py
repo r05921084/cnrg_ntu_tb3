@@ -9,13 +9,15 @@ from collections import deque
 import rospy
 from std_msgs.msg import String
 from std_msgs.msg import Header
-from std_msgs.msg import Float32
+from std_msgs.msg import Int16, Int16MultiArray
+from std_msgs.msg import Float32MultiArray
 # from binaural_microphone.msg import BinauralAudio
 from ipem_module.msg import AuditoryNerveImage
 
 # ROS
 NODE_NAME = 'nengo_ic_model'
-PUB_TOPIC_NAME = '/central_auditory_model/ic_stream'
+PUB_TOPIC_NAME = '/central_auditory_model/ic_stream/index'
+VOTE_RESULT_TOPIC_NAME = '/central_auditory_model/ic_stream/vote'
 SUB_MSO_TOPIC_NAME = '/central_auditory_model/mso_stream'
 SUB_LSO_TOPIC_NAME = '/central_auditory_model/lso_stream'
 
@@ -26,6 +28,8 @@ N_SUBCHANNELS = 40
 
 # SIMULATION
 MAX_DELAY = 5.
+
+SUPPORTED_ANGLES = [90, 60, 30, 0, 330, 300, 270]
 
 
 def run_IC_model():
@@ -55,7 +59,8 @@ def run_IC_model():
     rospy.Subscriber(SUB_LSO_TOPIC_NAME, AuditoryNerveImage, lso_cb)
 
     # ic_pub = [rospy.Publisher('%s_%d' % (PUB_TOPIC_NAME, i), Float32, queue_size=1) for i in range(7)]
-    ic_pub = rospy.Publisher('%s_%d' % (PUB_TOPIC_NAME, 0), Float32, queue_size=1)
+    ic_pub = rospy.Publisher(PUB_TOPIC_NAME, Int16, queue_size=1)
+    vote_pub = rospy.Publisher(VOTE_RESULT_TOPIC_NAME, Int16MultiArray, queue_size=1)
 
     rospy.loginfo('"%s" starts subscribing to "%s" and "%s".' % (NODE_NAME, SUB_MSO_TOPIC_NAME, SUB_LSO_TOPIC_NAME))
 
@@ -70,6 +75,7 @@ def run_IC_model():
 
     while not rospy.is_shutdown() and event.wait(1.0):
         event.clear()
+
         try:
             mso_msg = dq_mso.popleft()
         except IndexError:
@@ -81,20 +87,16 @@ def run_IC_model():
             dq_mso.appendleft(mso_msg)
             continue
 
-        # print mso_msg.timecode.to_sec(), lso_msg.timecode.to_sec()
-
         if mso_msg.timecode.to_sec() < lso_msg.timecode.to_sec():
-            print 'skip 1 mso_msg'
+            rospy.logwarn('skip 1 mso_msg')
             dq_lso.appendleft(lso_msg)
             continue
         elif mso_msg.timecode.to_sec() > lso_msg.timecode.to_sec():
-            print 'skip 1 lso_msg'
+            rospy.logwarn('skip 1 lso_msg')
             dq_mso.appendleft(mso_msg)
             continue
 
         if mso_msg.timecode.to_sec() == lso_msg.timecode.to_sec():
-            print '%f match!' % mso_msg.timecode.to_sec()
-
             mso_data = np.array(mso_msg.left_channel).reshape(mso_msg.shape)
             lso_data = np.array(lso_msg.left_channel).reshape(lso_msg.shape)
             # print mso_data.shape, lso_data.shape
@@ -108,13 +110,19 @@ def run_IC_model():
 
             the_argmax = np.argmax(full_freq, axis=0)
 
+            print the_argmax
+
             votes = np.dot(the_argmax, est_weight_matrix)
 
-            angle_estimate = np.argmax(np.histogram(votes, n_angle)[0])
-            
-            print angle_estimate
+            vote_result = np.histogram(votes, n_angle)[0]
 
+            vote_pub.publish(Int16MultiArray(data=vote_result))
+
+            angle_estimate = np.argmax(vote_result)
+            
             ic_pub.publish(angle_estimate)
+
+            rospy.loginfo('<%f> angle_estimate: %d' % (mso_msg.timecode.to_sec(), SUPPORTED_ANGLES[angle_estimate]))
 
 
             # angle_estimate = np.mean(full_freq, axis=(1, 2))

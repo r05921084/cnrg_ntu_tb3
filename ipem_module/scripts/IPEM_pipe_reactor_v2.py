@@ -3,6 +3,7 @@ import numpy as np
 from collections import deque
 from threading import Event
 from IPEM_pipe import IPEM_pipe
+import atexit
 
 import rospy
 from std_msgs.msg import String
@@ -19,78 +20,92 @@ NODE_NAME = 'IPEM_pipe_reactor'
 SUB_TOPIC_NAME = 'source_stream'
 PUB_TOPIC_NAME = 'apm_stream'
 
+SKIP_FIRST_L = 32
+SKIP_FIRST_R = 32
+
 
 def reactor():
     rospy.init_node(NODE_NAME, anonymous=False)
 
     ani_pub = rospy.Publisher(PUB_TOPIC_NAME, AuditoryNerveImage, queue_size=1)
-        
-    global ipem_L_count
-    ipem_L_count = 0
-    ipem_L_results = np.zeros([CHUNK_SIZE * N_SUBCHANNELS])
+    
     ipem_L_ready = Event()
+    ipem_L_q = deque()
 
     def ipem_L_cb(data):
-        if not ipem_L_ready.is_set():
-            global ipem_L_count
-            offset = ipem_L_count * N_SUBCHANNELS
-            ipem_L_results[offset:offset + N_SUBCHANNELS] = np.fromstring(data, dtype=np.float, count=N_SUBCHANNELS, sep=' ')
-            ipem_L_count += 1
-            if ipem_L_count == CHUNK_SIZE:
-                ipem_L_ready.set()
-                ipem_L_count = 0
+        global SKIP_FIRST_L
+        if SKIP_FIRST_L:
+            SKIP_FIRST_L -= 1
+            return
+
+        ipem_L_q.append(np.fromstring(data, dtype=np.float, count=N_SUBCHANNELS, sep=' '))
+
+        if (not ipem_L_ready.is_set()) and len(ipem_L_q) >= CHUNK_SIZE:
+            ipem_L_ready.set()
     
-    global ipem_R_count
-    ipem_R_count = 0
-    ipem_R_results = np.zeros([CHUNK_SIZE * N_SUBCHANNELS])
     ipem_R_ready = Event()
+    ipem_R_q = deque()
 
     def ipem_R_cb(data):
-        if not ipem_R_ready.is_set():
-            global ipem_R_count
-            offset = ipem_R_count * N_SUBCHANNELS
-            ipem_R_results[offset:offset + N_SUBCHANNELS] = np.fromstring(data, dtype=np.float, count=N_SUBCHANNELS, sep=' ')
-            ipem_R_count += 1
-            if ipem_R_count == CHUNK_SIZE:
-                ipem_R_ready.set()
-                ipem_R_count = 0
+        global SKIP_FIRST_R
+        if SKIP_FIRST_R:
+            SKIP_FIRST_R -= 1
+            return
+
+        ipem_R_q.append(np.fromstring(data, dtype=np.float, count=N_SUBCHANNELS, sep=' '))
+
+        if (not ipem_R_ready.is_set()) and len(ipem_R_q) >= CHUNK_SIZE:
+            ipem_R_ready.set()
 
     ipem_L = IPEM_pipe(new_ani_callback=ipem_L_cb, sample_frequency=SAMPLE_RATE, fifo_path=FIFO_PATH + '/L')
     ipem_R = IPEM_pipe(new_ani_callback=ipem_R_cb, sample_frequency=SAMPLE_RATE, fifo_path=FIFO_PATH + '/R')
 
+    timecode_q = deque()
+
     def feed_ipem(data):
-        rospy.loginfo(data.header.seq)
         if data.sample_rate != SAMPLE_RATE:
             raise TypeError('sample_rate missmatch!')
+        timecode_q.append(data.header.stamp)
         ipem_L.feed_pcm_samples(np.array(data.left_channel, dtype=np.int16).tobytes())
         ipem_R.feed_pcm_samples(np.array(data.right_channel, dtype=np.int16).tobytes())
 
     rospy.Subscriber(SUB_TOPIC_NAME, BinauralAudio, feed_ipem)
     rospy.loginfo('"%s" starts subscribing to "%s".' % (NODE_NAME, SUB_TOPIC_NAME))
 
-    try:
-        # rospy.spin()
-        while not rospy.is_shutdown():
-            while ipem_L_ready.wait(1) and ipem_R_ready.wait(1):                  
+    atexit.register(ipem_L.close)
+    atexit.register(ipem_R.close)
+
+    while not rospy.is_shutdown():
+        while ipem_L_ready.wait(1) and ipem_R_ready.wait(1):
+            if len(ipem_L_q) >= CHUNK_SIZE and len(ipem_R_q) >= CHUNK_SIZE:
+                ipem_L_np = np.concatenate([ipem_L_q.popleft() for i in range(CHUNK_SIZE)], axis=0)
+                ipem_R_np = np.concatenate([ipem_R_q.popleft() for i in range(CHUNK_SIZE)], axis=0)
+                
+
+                ipem_L_ready.clear()
+                ipem_R_ready.clear()
+
                 ani = AuditoryNerveImage(
                     header=Header(
                         stamp=rospy.Time.now()
                     ),
+                    timecode=timecode_q.popleft(),
                     sample_rate=SAMPLE_RATE / 2,
                     chunk_size=CHUNK_SIZE,
                     n_subchannels=N_SUBCHANNELS,
-                    left_channel=ipem_L_results,
-                    right_channel=ipem_R_results
+                    left_channel=ipem_L_np,
+                    right_channel=ipem_R_np
                 )
-                ipem_L_ready.clear()
-                ipem_R_ready.clear()
+                timecode_q.popleft()            
                 ani_pub.publish(ani)
 
-            rospy.loginfo('main loop time out!')
-            break
-    finally:
-        ipem_L.close()
-        ipem_R.close()
+                rospy.loginfo('len(timecode_q): %d' % len(timecode_q))
+                
+            else:
+                rospy.loginfo('ipem_L_ready or ipem_L_ready false alarm!')
+
+        rospy.logwarn('main loop time out!')
+        # break
 
 
 if __name__ == '__main__':

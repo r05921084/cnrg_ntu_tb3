@@ -115,7 +115,9 @@ if __name__ == '__main__':
         print data
 
     ipem_pipe = IPEM_pipe(new_ani_callback=just_print)
-    ipem_pipe.feed_pcm_samples('test')
-    ipem_pipe.feed_pcm_samples('test2')
+    ipem_pipe.feed_pcm_samples('\x00\x00\x00\x00')
+    ipem_pipe.feed_pcm_samples('\xff\x7f\x00\x00')
+    ipem_pipe.feed_pcm_samples('\x00\x00\x00\x00' * 100)
+
     ipem_pipe.close()
 
