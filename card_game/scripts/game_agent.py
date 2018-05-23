@@ -16,24 +16,24 @@ import socket
 
 import rospy
 from std_msgs.msg import String
-from chatbot.msg import ChatterStamped
+# from chatbot.msg import ChatterStamped
 
 
 event = threading.Event()
 
 def callback(data):
     global msg
-    # msg = data.data
-    msg = data.text
+    msg = data.data
+    # msg = data.text
     event.set()
 
 msg = None
 
 card_num = 3
 
-key_map = {'apple':'蘋果', 'banana':'香蕉', 'cat':'貓', 'dog':'狗'}
+key_map = {'apple':'蘋果', 'banana':'香蕉', 'cat':'貓', 'dog':'狗', 'elephant':'大象', 'fox':'狐狸'}
 
-game_introduction = ["XXX您好,我們來玩遊戲吧！", "這裡有{}張牌,每張牌都有不同的圖案".format(card_num),
+game_introduction = ["湯姆您好,我們來玩遊戲吧！", "這裡有幾張牌,每張牌都有不同的圖案",
                     "等會兒我會把牌蓋起來", "看看你能記住幾張", "記得越多就可以拿到越多獎品喔！",
                     "知道怎麼玩了嗎？", "那我們就開始囉！"]
 
@@ -93,7 +93,7 @@ def create_agent(ws):
     t.start()
 
 
-def speak(sentence):
+def speak(sentence, timeout=2.):
     sentence = sentence.decode('utf8')
     fp = tempfile.NamedTemporaryFile(delete=True)
     tts = gTTS(text=sentence, lang='zh')
@@ -102,7 +102,23 @@ def speak(sentence):
     mixer.init()
     mixer.music.load('{}.mp3'.format(fp.name))
     mixer.music.play()
+    time.sleep(timeout)
     fp.close()
+
+
+def play_sound(sound_type, timeout=3.):
+
+    if sound_type=='right':
+        f = os.path.join(STATIC_PATH, 'sounds', 'clapping.mp3')
+
+    elif sound_type=='wrong':
+        f = os.path.join(STATIC_PATH, 'sounds', 'failure.mp3')
+
+    mixer.init()
+    mixer.music.load(f)
+    mixer.music.play()
+    time.sleep(timeout)
+    mixer.music.stop()
 
 
 def get_feedback():
@@ -150,7 +166,26 @@ def analysis(statement, card_key):
     return correct, comment
 
 
-def agent(websocket):
+def get_level(user_name):
+    p = os.path.join(os.path.dirname(__file__), 'log', user_name)
+    try:
+        with open(p, 'r') as f:
+            level = int(f.readline().strip('\n'))
+    except:
+        level = 3
+
+    return level
+
+
+def save(user_name, accuracy, reaction_time):
+    p = os.path.join(os.path.dirname(__file__), 'log', user_name)
+    level = len(accuracy)
+    with open(p, 'a') as f:
+        f.write(time.strftime("%Y-%m-%d %H:%M:%S level:{}".format(level)))
+        f.write(' accuracy:%s reaction_time(sec):%s\n' % (','.join(map(str, accuracy.round(2))), ','.join(map(str, reaction_time.round(1)))))
+
+
+def agent(websocket, user_name='測試員1號'):
     # TODO: check connection
 
     def send_command(command):
@@ -168,106 +203,146 @@ def agent(websocket):
         #     msg = command+','+','.join(n)
         websocket.write_message(command)
 
-
     # Set level (card number)
-    send_command('init,3')
-    # send_command('init,{}'.format(card_num))
+    suggested_level = get_level(user_name)
 
-    reaction_time = np.zeros(card_num)
+    while True:
+        send_command('init,{}'.format(suggested_level))
+        card_num = suggested_level
+        accuracy = np.zeros(card_num)
+        reaction_time = np.zeros(card_num)
 
-    # Loading image
-    select_card = random.sample(cards_all, card_num)
-    # print select_card
-    send_command('load,{}'.format(','.join(select_card)))
+        # Loading image
+        select_card = random.sample(cards_all, card_num)
+        # print select_card
+        send_command('load,{}'.format(','.join(select_card)))
 
-    # Introducing the game
-    for s in game_introduction:
-        send_command('talk,{}'.format(s))
-        speak(s)
-        feedback = get_feedback()
-        # print 'people: '+feedback
+        # Introducing the game
 
-    # Playing
-    send_command('start')
-    
-    ## Describing the card
-    # TODO: check if the answer is right
-    for i in range(card_num):
-        right = False
-
-        s_describe = random.choice(card_describe)
-        send_command('ask,{},{}'.format(i, s_describe))
-        speak(s_describe)
-
-        while not right:
+        for s in game_introduction:
+            send_command('talk,{}'.format(s))
+            speak(s)
             feedback = get_feedback()
-            right, comment = analysis(feedback, select_card[i][:-4])
-            # s_praise = random.choice(praise)
-            print comment
-            send_command('talk,{}'.format(comment))
-            speak(comment)
-        time.sleep(2)
+            # print 'people: '+feedback
 
+        # Playing
+        send_command('start')
 
-    send_command('talk,都記住了嗎?')
-    speak("都記住了嗎")
-    feedback = get_feedback()
-
-
-    ## Fold?
-    send_command('fold')
-
-    accuracy = np.zeros(card_num) - 1
-    ## Test?
-    for i in range(card_num):
-        s_test = random.choice(test)
-        send_command('ask,{},{}'.format(i, s_test))
-        speak(s_test)
-        t = time.time()
-        ###
-
-        count = 0
-
-        while True:
-            feedback = get_feedback()
-            count += 1
-
-            if check_answer(feedback, select_card[i][:-4]):
-                send_command('talk,答對了!')
-                speak("答對了")
-                time.sleep(1)
-                # send_command('turn,{}'.format(i))
-                send_command('turn,%d'%i)
-                break
-
-            else:
-                send_command('talk,答錯了!')
-                speak("答錯了")
-                time.sleep(2)
-
-                send_command('talk,再猜猜看')
-                speak("再猜猜看")
-
-        accuracy[i] = (1. / count) * 100
-        time.sleep(1)
-        reaction_time[i] = time.time() - t
-
-    total_time = np.sum(reaction_time)
-    send_command('talk,共花了%d秒'%total_time)
-    # send_command('talk,共花了{}秒'.format(int(total_time)))
-    with open(os.path.join(STATIC_PATH, 'history.txt'), 'w') as f:
-        f.write(time.strftime("%Y-%m-%d %H:%M:%S\n"))
-        f.write('card, reaction time, accuracy\n')
-
+        ## Describing the card
+        # TODO: check if the answer is right
         for i in range(card_num):
-            f.write('{}, {:.1f} s, {:.2f}%\n'.format(select_card[i][:-4], reaction_time[i], accuracy[i]))
+            right = False
 
+            s_describe = random.choice(card_describe)
+            send_command('ask,{},{}'.format(i, s_describe))
+            speak(s_describe)
+
+            while not right:
+                feedback = get_feedback()
+                right, comment = analysis(feedback, select_card[i][:-4])
+                # s_praise = random.choice(praise)
+                send_command('talk,{}'.format(comment))
+                speak(comment)
+            time.sleep(2)
+
+
+        send_command('talk,都記住了嗎?')
+        speak("都記住了嗎")
+        feedback = get_feedback()
+
+
+        ## Fold?
+        send_command('fold')
+
+        game_mode = 1
+        # 0: keep playing when the answer is wrong
+        # 1: turn next card when the answer is wrong
+
+        ## Test?
+        for i in range(card_num):
+            s_test = random.choice(test)
+            send_command('ask,{},{}'.format(i, s_test))
+            speak(s_test)
+            t = time.time()
+            ###
+
+            count = 0
+
+            while True:
+                feedback = get_feedback()
+                count += 1
+
+                if check_answer(feedback, select_card[i][:-4]):
+                    send_command('talk,答對了!')
+                    speak("答對了", timeout=1)
+                    play_sound('right')
+                    # send_command('turn,{}'.format(i))
+                    send_command('turn,%d'%i)
+                    break
+
+                else:
+                    send_command('talk,答錯了!')
+                    speak("答錯了", timeout=1)
+                    play_sound('wrong')
+
+                    if game_mode==0:
+                        send_command('talk,再猜猜看')
+                        speak("再猜猜看")
+                    else:
+                        send_command('turn,%d' % i)
+                        send_command('talk,答案是{}'.format(key_map[select_card[i][:-4]]))
+                        speak('答案是{}'.format(key_map[select_card[i][:-4]]))
+                        count = 0
+                        break
+
+            if game_mode==0:
+                accuracy[i] = (1. / count)
+            else:
+                accuracy[i] = count
+
+            time.sleep(1)
+            reaction_time[i] = time.time() - t
+
+        total_time = np.sum(reaction_time)
+        send_command('talk,共花了%d秒'%total_time)
+
+        suggested_level = level_adaptation(suggested_level, accuracy, reaction_time)
+        save(user_name, accuracy, reaction_time)
+        print 'avg_acc:', np.mean(accuracy)
+        print 'avg_reaction_time:', np.mean(reaction_time)
+        print 'adapting to level', suggested_level
+
+        send_command('talk,還要玩嗎?')
+        speak('還要玩嗎', timeout=2)
+        next_game = get_feedback()
+        if next_game == 'q':
+            break
+        else:
+            pass
 
     rospy.signal_shutdown('Game Finished')
     
 
 def level_adaptation(curr_level, accuracy, reaction_time):
-    adapted_level = 0
+
+    acc_u = 0.75
+    acc_l = 0.25
+    rt_u = 20
+    rt_l = 10
+
+    avg_acc = np.mean(accuracy)
+    avg_rt = np.mean(reaction_time)
+
+    if avg_acc >= acc_u and avg_rt <= rt_l:
+        adapted_level = min(curr_level + 1, 5)
+
+    elif avg_acc <= acc_l or avg_rt >= rt_u:
+        adapted_level = curr_level - 1
+
+    else:
+        adapted_level = curr_level
+
+
     return adapted_level
 
 
@@ -294,8 +369,8 @@ class Application(web.Application):
 
 def main():
     rospy.init_node('game_agent', anonymous=True)
-    rospy.Subscriber("chatbot/input", ChatterStamped, callback)
-    # rospy.Subscriber("chatter", String, callback)
+    # rospy.Subscriber("chatbot/input", ChatterStamped, callback)
+    rospy.Subscriber("chatter", String, callback)
     options.parse_command_line()
     app = Application()
     app.listen(options.port, options.ip)
