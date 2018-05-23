@@ -8,3 +8,9 @@ ipem_module/dev_src/*.dat
 card_game/scripts/\.idea/workspace\.xml
 
 card_game/scripts/\.idea/
+
+*.mp3
+
+card_game/scripts/log/
+
+card_game/scripts/static/images/

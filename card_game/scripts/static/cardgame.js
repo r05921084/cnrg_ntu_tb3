@@ -136,6 +136,7 @@ function turn(card_id){
 
 function init(content){
 
+    pre_card_idx = -1;
 	card_num = content;
 	// var card_board = document.createElement("div");
 
