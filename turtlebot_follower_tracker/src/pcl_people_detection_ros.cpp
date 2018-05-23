@@ -11,7 +11,10 @@ PCLPeopleDetectionROS::PCLPeopleDetectionROS(ros::NodeHandle& n, ros::NodeHandle
 //                               ros::Time::now(), camera_base_tf_);
   float camera_height = 0.887;
   pnh_.param("camera_height", camera_height);
+  //pnh_.param("base_link", base_frame_);
+  base_frame_ = "camera_link";
   people_detector_.reset(new PCLPeopleDetection(camera_height));
+  ROS_INFO("0");
 
   person_pub_ = nh_.advertise<spencer_tracking_msgs::DetectedPersons> ("output", 1,
                                                    boost::bind(&PCLPeopleDetectionROS::connectCB, this, _1),
@@ -26,6 +29,7 @@ PCLPeopleDetectionROS::~PCLPeopleDetectionROS()
 
 void PCLPeopleDetectionROS::depthCB(const sensor_msgs::PointCloud2ConstPtr& depth_msgs)
 {
+//  ROS_INFO("1");
   pcl::PCLPointCloud2::Ptr pcl_input(new pcl::PCLPointCloud2);
   pcl_conversions::toPCL(*depth_msgs, *pcl_input);
 
@@ -38,9 +42,12 @@ void PCLPeopleDetectionROS::depthCB(const sensor_msgs::PointCloud2ConstPtr& dept
     Eigen::Quaternionf q(people_pose.rotation());
 
     geometry_msgs::PoseWithCovariance pose_msg;
-    pose_msg.pose.position.x = -people_pose.translation().z();
-    pose_msg.pose.position.y = people_pose.translation().x();
-    pose_msg.pose.position.z = people_pose.translation().y();
+    //pose_msg.pose.position.x = -people_pose.translation().z();
+    //pose_msg.pose.position.y = people_pose.translation().x();
+    //pose_msg.pose.position.z = people_pose.translation().y();
+    pose_msg.pose.position.x = people_pose.translation().z();
+    pose_msg.pose.position.y = -people_pose.translation().x();
+    pose_msg.pose.position.z = -people_pose.translation().y();
     pose_msg.pose.orientation.x = q.x();
     pose_msg.pose.orientation.y = q.y();
     pose_msg.pose.orientation.z = q.z();
@@ -68,7 +75,7 @@ void PCLPeopleDetectionROS::depthCB(const sensor_msgs::PointCloud2ConstPtr& dept
   }
 
   ros::Time current_t = ros::Time::now();
-  ROS_INFO_STREAM("Loop time: " << (current_t-last_time_).toSec() << "sec...");
+//  ROS_INFO_STREAM("Loop time: " << (current_t-last_time_).toSec() << "sec...");
 //  if ((current_t-last_time_).toSec() < 5.0){
 //    ROS_INFO_STREAM("sleep " << (current_t-last_time_).toSec() << " secs...");
 //    ros::Duration((current_t-last_time_).toSec()).sleep();
@@ -80,16 +87,16 @@ void PCLPeopleDetectionROS::depthCB(const sensor_msgs::PointCloud2ConstPtr& dept
 void PCLPeopleDetectionROS::connectCB(const ros::SingleSubscriberPublisher &pub)
 {
   boost::mutex::scoped_lock lock(connect_mutex_);
-  try{
+  /*try{
       tf_listener_.waitForTransform("base_link", "camera_depth_frame", ros::Time(0), ros::Duration(10.0));
   }
   catch(tf::TransformException ex){
       ROS_ERROR("%s",ex.what());
-  }
+  }*/
 
   if (!sub_ && person_pub_.getNumSubscribers() > 0)
   {
-    sub_ = nh_.subscribe<sensor_msgs::PointCloud2>("input", 1, &PCLPeopleDetectionROS::depthCB, this);
+    sub_ = nh_.subscribe<sensor_msgs::PointCloud2>("input", 10, &PCLPeopleDetectionROS::depthCB, this);
     last_time_ = ros::Time::now();
     ROS_INFO("Start follower tracker callback");
   }
