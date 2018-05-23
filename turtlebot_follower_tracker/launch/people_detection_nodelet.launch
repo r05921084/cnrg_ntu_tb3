@@ -1,11 +1,12 @@
 <launch>
-  <arg name="input" default="/camera/depth/points" />
-  <arg name="output" default="/turtlebot_people_detection/detected_persons" />
-  <arg name="nodelet_manager" default="depthimage_nodelet_manager" />
+  <arg name="input" default="/realsense/camera/depth_registered/points" />
+  <arg name="output" default="/spencer/perception_internal/detected_persons/rgbd/hog" />
+  <arg name="nodelet_manager" default="/realsense/camera/camera_nodelet_manager" /> <!--depthimage_nodelet_manager -->
   
   <node pkg="nodelet" type="nodelet" name="people_detection" 
-        args="load turtlebot_guide/FollowerTrackerNodelet $(arg nodelet_manager)">
-    <remap from="input" to="$(arg input)" />
-    <remap from="output" to="$(arg output)" />
+        args="load turtlebot_guide/FollowerTrackerNodelet $(arg nodelet_manager)" output="screen">
+    <remap from="/realsense/camera/input" to="$(arg input)" />
+    <remap from="/realsense/camera/output" to="$(arg output)" />  
+    <rosparam file="$(find turtlebot_follower_tracker)/params/follower_tracker_params.yaml" command="load" />
   </node>
 </launch>
