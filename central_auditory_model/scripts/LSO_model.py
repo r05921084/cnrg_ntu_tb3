@@ -22,7 +22,7 @@ CHUNK_SIZE = 1024
 N_SUBCHANNELS = 40
 
 # MODEL
-DECAY_VALUE = [-0.05, -0.1, -0.15, -0.25, -0.35, -0.4, -0.45]
+DECAY_VALUE = [-0.45, -0.4, -0.35, -0.25, -0.15, -0.1, -0.05]  # [-0.05, -0.1, -0.15, -0.25, -0.35, -0.4, -0.45]
 DECAY_VALUE_R = list(reversed(DECAY_VALUE))
 N_DECAY_VAL = len(DECAY_VALUE)
 
@@ -119,7 +119,7 @@ def run_LSO_model():
             rospy.logwarn('shape mismatch: %d -> %d %d' % (len(data.left_channel), data.chunk_size, data.n_subchannels))
             return
         else:
-            dl_L.update(ani_L, timecode=data.header.stamp)
+            dl_L.update(ani_L, timecode=data.timecode)
             dl_R.update(ani_R)
             event.set()
 

@@ -27,6 +27,8 @@ N_SUBCHANNELS = 40
 # SIMULATION
 MAX_DELAY = 5.
 
+SUPPORTED_ANGLES = [90, 60, 30, 0, 330, 300, 270]
+
 
 def run_IC_model():
 
@@ -70,6 +72,7 @@ def run_IC_model():
 
     while not rospy.is_shutdown() and event.wait(1.0):
         event.clear()
+
         try:
             mso_msg = dq_mso.popleft()
         except IndexError:
@@ -81,20 +84,16 @@ def run_IC_model():
             dq_mso.appendleft(mso_msg)
             continue
 
-        # print mso_msg.timecode.to_sec(), lso_msg.timecode.to_sec()
-
         if mso_msg.timecode.to_sec() < lso_msg.timecode.to_sec():
-            print 'skip 1 mso_msg'
+            rospy.logwarn('skip 1 mso_msg')
             dq_lso.appendleft(lso_msg)
             continue
         elif mso_msg.timecode.to_sec() > lso_msg.timecode.to_sec():
-            print 'skip 1 lso_msg'
+            rospy.logwarn('skip 1 lso_msg')
             dq_mso.appendleft(mso_msg)
             continue
 
         if mso_msg.timecode.to_sec() == lso_msg.timecode.to_sec():
-            print '%f match!' % mso_msg.timecode.to_sec()
-
             mso_data = np.array(mso_msg.left_channel).reshape(mso_msg.shape)
             lso_data = np.array(lso_msg.left_channel).reshape(lso_msg.shape)
             # print mso_data.shape, lso_data.shape
@@ -108,13 +107,15 @@ def run_IC_model():
 
             the_argmax = np.argmax(full_freq, axis=0)
 
+            print the_argmax
+
             votes = np.dot(the_argmax, est_weight_matrix)
 
             angle_estimate = np.argmax(np.histogram(votes, n_angle)[0])
-            
-            print angle_estimate
 
             ic_pub.publish(angle_estimate)
+
+            rospy.loginfo('<%f> angle_estimate: %d' % (mso_msg.timecode.to_sec(), SUPPORTED_ANGLES[angle_estimate]))
 
 
             # angle_estimate = np.mean(full_freq, axis=(1, 2))
